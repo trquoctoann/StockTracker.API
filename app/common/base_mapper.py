@@ -4,6 +4,8 @@ from pydantic import BaseModel
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlmodel import SQLModel, inspect
 
+from app.exception.exception import InternalException
+
 
 class BaseMapper[M: SQLModel, E: BaseModel]:
     model_class: type[M]
@@ -27,5 +29,7 @@ class BaseMapper[M: SQLModel, E: BaseModel]:
         try:
             mapper = inspect(type(model))
         except NoInspectionAvailable as err:
-            raise ValueError(f"{type(model)} is not a mapped SQLModel model") from err
+            raise InternalException(
+                developer_message=f"{type(model)} is not a mapped SQLModel model",
+            ) from err
         return {column.key: getattr(model, column.key) for column in mapper.column_attrs}

@@ -23,5 +23,9 @@ class Settings(BaseSettings):
     DEFAULT_PAGE_SIZE: int
     MAX_PAGE_SIZE: int
 
+    # i18n
+    DEFAULT_LOCALE: str
+    SUPPORTED_LOCALES: list[str]
+
 
 settings = Settings()  # pyright: ignore[reportCallIssue]

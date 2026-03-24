@@ -1,0 +1,44 @@
+{
+  "errors": {
+    "validation": {
+      "failed": "Dữ liệu gửi lên không hợp lệ.",
+      "field_errors": "Một hoặc nhiều trường không hợp lệ."
+    },
+    "auth": {
+      "unauthorized": "Vui lòng đăng nhập hoặc cung cấp thông tin xác thực.",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này."
+    },
+    "client": {
+      "bad_request": "Yêu cầu không được hiểu đúng.",
+      "unsupported_media_type": "Loại nội dung yêu cầu không được hỗ trợ.",
+      "payload_too_large": "Nội dung yêu cầu quá lớn."
+    },
+    "query": {
+      "order_by_empty_field_name": "order_by không hợp lệ: tên trường rỗng.",
+      "order_by_field_not_allowed": "Trường '{field}' không được phép dùng trong order_by. Cho phép: {allowed}."
+    },
+    "filter": {
+      "relation_depth_exceeded": "Khóa lọc '{key}' không hợp lệ: chỉ hỗ trợ tối đa một cấp quan hệ (một dấu '.').",
+      "unknown_relation_alias": "Alias quan hệ '{alias}' trong bộ lọc không tồn tại.",
+      "field_not_allowed": "Trường '{field}' không được phép với toán tử '{operator}'. Cho phép: {allowed}.",
+      "related_field_invalid": "Trường '{field}' không tồn tại trên model quan hệ '{model_name}' (khóa lọc '{filter_key}')."
+    },
+    "resource": {
+      "not_found": "Không tìm thấy tài nguyên được yêu cầu."
+    },
+    "business": {
+      "user": {
+        "not_found": "Không tìm thấy người dùng có id {id}.",
+        "username_taken": "Tên đăng nhập này đã được sử dụng.",
+        "email_taken": "Email này đã được sử dụng."
+      }
+    },
+    "rate_limit": {
+      "too_many_requests": "Quá nhiều yêu cầu. Vui lòng thử lại sau."
+    },
+    "system": {
+      "internal": "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại sau.",
+      "unavailable": "Dịch vụ tạm thời không khả dụng. Vui lòng thử lại sau."
+    }
+  }
+}

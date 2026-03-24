@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_v1_router
 from app.core.config import settings
+from app.exception.handler import register_exception_handlers
 
 
 @asynccontextmanager
@@ -31,6 +32,8 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(api_v1_router)
+
+    register_exception_handlers(app)
 
     @app.get("/health", tags=["Health"])
     async def health_check():

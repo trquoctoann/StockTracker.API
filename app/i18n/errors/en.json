@@ -1,0 +1,44 @@
+{
+  "errors": {
+    "validation": {
+      "failed": "The request could not be validated.",
+      "field_errors": "One or more fields are invalid."
+    },
+    "auth": {
+      "unauthorized": "Authentication is required.",
+      "forbidden": "You do not have permission to perform this action."
+    },
+    "client": {
+      "bad_request": "The request could not be understood.",
+      "unsupported_media_type": "The request content type is not supported.",
+      "payload_too_large": "The request body is too large."
+    },
+    "query": {
+      "order_by_empty_field_name": "Invalid order_by: empty field name.",
+      "order_by_field_not_allowed": "Field '{field}' is not allowed in order_by. Allowed: {allowed}."
+    },
+    "filter": {
+      "relation_depth_exceeded": "Invalid filter key '{key}': only one relation level (a single '.') is supported.",
+      "unknown_relation_alias": "Unknown relation alias '{alias}' in filters.",
+      "field_not_allowed": "Field '{field}' is not allowed for operator '{operator}'. Allowed: {allowed}.",
+      "related_field_invalid": "Field '{field}' is not a column on related model '{model_name}' (filter key '{filter_key}')."
+    },
+    "resource": {
+      "not_found": "The requested resource was not found."
+    },
+    "business": {
+      "user": {
+        "not_found": "User with id {id} was not found.",
+        "username_taken": "This username is already in use.",
+        "email_taken": "This email is already in use."
+      }
+    },
+    "rate_limit": {
+      "too_many_requests": "Too many requests. Please try again later."
+    },
+    "system": {
+      "internal": "An unexpected error occurred. Please try again later.",
+      "unavailable": "The service is temporarily unavailable. Please try again later."
+    }
+  }
+}

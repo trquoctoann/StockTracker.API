@@ -6,6 +6,8 @@ from typing import Any, ClassVar, Self
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 from sqlmodel import SQLModel, desc, exists, select
 
+from app.exception.exception import InternalException, ValidationException
+
 
 class PaginatedResponse[T](BaseModel):
     items: list[T]
@@ -65,15 +67,16 @@ class PaginationQueryParameter(BaseModel):
             return self
         allowed = self.__class__.orderable_fields
         if allowed is None:
-            raise ValueError(
-                f"{self.__class__.__name__} must assign orderable_fields when order_by is used",
+            raise InternalException(
+                developer_message=f"{self.__class__.__name__} must assign orderable_fields when order_by is used",
             )
         for field, _desc in entries:
             if not field:
-                raise ValueError("Invalid order_by token: empty field name.")
+                raise ValidationException(message_key="errors.query.order_by_empty_field_name")
             if field not in allowed:
-                raise ValueError(
-                    f"Field '{field}' is not allowed to order by. Allowed: {sorted(allowed)}",
+                raise ValidationException(
+                    message_key="errors.query.order_by_field_not_allowed",
+                    params={"field": field, "allowed": ", ".join(sorted(allowed))},
                 )
         return self
 
@@ -113,16 +116,20 @@ class FilterQueryParameter[TFilterKey: str](BaseModel):
             return None, key
         alias, rest = key.split(".", 1)
         if "." in rest:
-            msg = f"Invalid filter key '{key}': only one relation level is supported."
-            raise ValueError(msg)
+            raise ValidationException(
+                message_key="errors.filter.relation_depth_exceeded",
+                params={"key": key},
+            )
         return alias, rest
 
     @classmethod
     def _resolve_related_spec(cls, alias: str) -> RelatedFilterSpec:
         specs = cls.related_filter_specs
         if not specs or alias not in specs:
-            msg = f"Unknown relation alias '{alias}' in related_filter_specs."
-            raise ValueError(msg)
+            raise ValidationException(
+                message_key="errors.filter.unknown_relation_alias",
+                params={"alias": alias},
+            )
         return specs[alias]
 
     @staticmethod
@@ -133,8 +140,9 @@ class FilterQueryParameter[TFilterKey: str](BaseModel):
     def _validate_filter_keys(self) -> Self:
         allowed = self.__class__.filterable_fields
         if allowed is None:
-            raise ValueError(
-                f"{self.__class__.__name__} must assign filterable_fields",
+            raise ValidationException(
+                message_key="errors.filter.filterable_fields_required",
+                params={"class_name": self.__class__.__name__},
             )
         operator_maps: list[tuple[str, Any]] = [
             ("eq", self.eq),
@@ -154,16 +162,26 @@ class FilterQueryParameter[TFilterKey: str](BaseModel):
             for key in m:
                 key_s = self._filter_key_str(key)
                 if key_s not in allowed:
-                    raise ValueError(
-                        f"Field '{key_s}' is not allowed to filter (operator {op_name}). Allowed: {sorted(allowed)}",
+                    raise ValidationException(
+                        message_key="errors.filter.field_not_allowed",
+                        params={
+                            "field": key_s,
+                            "operator": op_name,
+                            "allowed": ", ".join(sorted(allowed)),
+                        },
                     )
                 alias, field = self._split_field_key(key_s)
                 if alias is None:
                     continue
                 spec = self.__class__._resolve_related_spec(alias)
                 if not hasattr(spec.model, field):
-                    raise ValueError(
-                        f"Field '{field}' is not a column on related model {spec.model.__name__} (filter key '{key}').",
+                    raise ValidationException(
+                        message_key="errors.filter.related_field_invalid",
+                        params={
+                            "field": field,
+                            "model_name": spec.model.__name__,
+                            "filter_key": key_s,
+                        },
                     )
         return self
 
