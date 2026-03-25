@@ -13,6 +13,12 @@ class Settings(BaseSettings):
     APP_VERSION: str
     DEBUG: bool
 
+    # Logging
+    ENVIRONMENT: str
+    SERVICE_NAME: str | None
+    LOG_LEVEL: str
+    LOG_JSON: bool
+
     # Database
     DATABASE_URL: str
 
@@ -26,6 +32,10 @@ class Settings(BaseSettings):
     # i18n
     DEFAULT_LOCALE: str
     SUPPORTED_LOCALES: list[str]
+
+    @property
+    def log_service_name(self) -> str:
+        return (self.SERVICE_NAME or self.APP_NAME).strip()
 
 
 settings = Settings()  # pyright: ignore[reportCallIssue]

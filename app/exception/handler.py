@@ -11,9 +11,12 @@ from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.config import settings
+from app.core.logger import get_logger
 from app.exception.exception import AppException, ErrorCode
 from app.i18n.catalog import get_error_catalog
 from app.i18n.locale import get_current_locale
+
+_LOG = get_logger(__name__)
 
 
 class ErrorEnvelope(BaseModel):
@@ -50,6 +53,12 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(AppException)
     async def app_exception_handler(_request: Request, exc: AppException) -> JSONResponse:
+        _LOG.warning(
+            "APP_EXCEPTION",
+            code=str(exc.code),
+            status_code=exc.status_code,
+            message_key=exc.message_key,
+        )
         locale = get_current_locale()
         message = catalog.get(locale, exc.message_key, exc.params)
         dev_msg = _app_exception_developer_message(exc)
@@ -67,6 +76,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         _request: Request,
         exc: RequestValidationError,
     ) -> JSONResponse:
+        _LOG.info("VALIDATION_ERROR", errors_count=len(exc.errors()))
         locale = get_current_locale()
         message = catalog.get(locale, "errors.validation.field_errors", None)
         details = jsonable_encoder(exc.errors())
@@ -80,6 +90,10 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(StarletteHTTPException)
     async def http_exception_handler(_request: Request, exc: StarletteHTTPException) -> JSONResponse:
+        if exc.status_code >= 500:
+            _LOG.error("HTTP_EXCEPTION", status_code=exc.status_code, detail=str(exc.detail))
+        elif exc.status_code >= 400:
+            _LOG.info("HTTP_EXCEPTION", status_code=exc.status_code, detail=str(exc.detail))
         locale = get_current_locale()
         error_code, message_key = _get_error_code_and_message_key(exc.status_code)
         message = catalog.get(locale, message_key, None)
@@ -94,6 +108,11 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(_request: Request, exc: Exception) -> JSONResponse:
+        _LOG.error(
+            "UNHANDLED_EXCEPTION",
+            error_type=type(exc).__name__,
+            exc_info=(type(exc), exc, exc.__traceback__),
+        )
         locale = get_current_locale()
         message = catalog.get(locale, "errors.system.internal", None)
         dev_msg = None
