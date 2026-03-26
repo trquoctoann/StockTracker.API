@@ -18,9 +18,13 @@ class Settings(BaseSettings):
     SERVICE_NAME: str | None
     LOG_LEVEL: str
     LOG_JSON: bool
+    LOG_SQL: bool
 
     # Database
     DATABASE_URL: str
+    DATABASE_POOL_PRE_PING: bool
+    DATABASE_POOL_SIZE: int
+    DATABASE_MAX_OVERFLOW: int
 
     # CORS
     ALLOWED_ORIGINS: list[str]

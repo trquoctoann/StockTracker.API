@@ -1,32 +1,43 @@
 import uuid
 from abc import ABC, abstractmethod
+from typing import TypeVar
 
 from pydantic import BaseModel
 
 from app.common.base_schema import FilterQueryParameter, PaginatedResponse, PaginationQueryParameter
 
+TFetchSpec = TypeVar("TFetchSpec")
 
-class QueryService[T: BaseModel, TFilterKey: str](ABC):
+
+class QueryService[T: BaseModel, TFetchSpec](ABC):
     @abstractmethod
-    async def find_by_id(self, id: uuid.UUID | int) -> list[T]:
+    async def find_by_id(self, id: uuid.UUID | int, *, fetch_spec: TFetchSpec | None = None) -> T | None:
         pass
 
     @abstractmethod
-    async def find_all(self, filter_params: FilterQueryParameter[TFilterKey]) -> list[T]:
+    async def find_all(self, filter_params: FilterQueryParameter, *, fetch_spec: TFetchSpec | None = None) -> list[T]:
         pass
 
     @abstractmethod
     async def find_page(
-        self, filter_params: FilterQueryParameter[TFilterKey], pagination_params: PaginationQueryParameter
+        self,
+        filter_params: FilterQueryParameter,
+        pagination_params: PaginationQueryParameter,
+        *,
+        fetch_spec: TFetchSpec | None = None,
     ) -> PaginatedResponse[T]:
         pass
 
     @abstractmethod
-    async def count(self, filter_params: FilterQueryParameter[TFilterKey]) -> int:
+    async def count(self, filter_params: FilterQueryParameter) -> int:
         pass
 
     @abstractmethod
-    async def exists(self, filter_params: FilterQueryParameter[TFilterKey]) -> bool:
+    async def exists(self, filter_params: FilterQueryParameter) -> bool:
+        pass
+
+    @abstractmethod
+    async def _enrich_entities(self, entities: list[T], fetch_spec: TFetchSpec) -> list[T]:
         pass
 
 

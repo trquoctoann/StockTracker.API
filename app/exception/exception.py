@@ -43,7 +43,7 @@ class AppException(Exception):  # noqa: N818
 class ValidationException(AppException):
     def __init__(
         self,
-        message_key: str = "errors.validation.failed",
+        message_key: str,
         *,
         params: dict[str, Any] | None = None,
         details: list[dict[str, Any]] | None = None,
@@ -58,76 +58,34 @@ class ValidationException(AppException):
 
 
 class UnauthorizedException(AppException):
-    def __init__(
-        self,
-        message_key: str = "errors.auth.unauthorized",
-        *,
-        params: dict[str, Any] | None = None,
-        headers: dict[str, str] | None = None,
-    ) -> None:
-        super().__init__(
-            ErrorCode.UNAUTHORIZED,
-            message_key,
-            status_code=401,
-            params=params,
-            headers=headers,
-        )
+    def __init__(self, *, headers: dict[str, str] | None = None) -> None:
+        super().__init__(ErrorCode.UNAUTHORIZED, "errors.auth.unauthorized", status_code=401, headers=headers)
 
 
 class ForbiddenException(AppException):
-    def __init__(
-        self,
-        message_key: str = "errors.auth.forbidden",
-        *,
-        params: dict[str, Any] | None = None,
-    ) -> None:
-        super().__init__(ErrorCode.FORBIDDEN, message_key, status_code=403, params=params)
+    def __init__(self) -> None:
+        super().__init__(ErrorCode.FORBIDDEN, "errors.auth.forbidden", status_code=403)
 
 
 class BadRequestException(AppException):
-    def __init__(
-        self,
-        message_key: str = "errors.client.bad_request",
-        *,
-        params: dict[str, Any] | None = None,
-    ) -> None:
-        super().__init__(ErrorCode.BAD_REQUEST, message_key, status_code=400, params=params)
+    def __init__(self) -> None:
+        super().__init__(ErrorCode.BAD_REQUEST, "errors.client.bad_request", status_code=400)
 
 
 class PayloadTooLargeException(AppException):
-    def __init__(
-        self,
-        message_key: str = "errors.client.payload_too_large",
-        *,
-        params: dict[str, Any] | None = None,
-    ) -> None:
-        super().__init__(
-            ErrorCode.PAYLOAD_TOO_LARGE,
-            message_key,
-            status_code=413,
-            params=params,
-        )
+    def __init__(self) -> None:
+        super().__init__(ErrorCode.PAYLOAD_TOO_LARGE, "errors.client.payload_too_large", status_code=413)
 
 
 class UnsupportedMediaTypeException(AppException):
-    def __init__(
-        self,
-        message_key: str = "errors.client.unsupported_media_type",
-        *,
-        params: dict[str, Any] | None = None,
-    ) -> None:
-        super().__init__(
-            ErrorCode.UNSUPPORTED_MEDIA_TYPE,
-            message_key,
-            status_code=415,
-            params=params,
-        )
+    def __init__(self) -> None:
+        super().__init__(ErrorCode.UNSUPPORTED_MEDIA_TYPE, "errors.client.unsupported_media_type", status_code=415)
 
 
 class NotFoundException(AppException):
     def __init__(
         self,
-        message_key: str = "errors.resource.not_found",
+        message_key: str,
         *,
         params: dict[str, Any] | None = None,
     ) -> None:
@@ -137,7 +95,7 @@ class NotFoundException(AppException):
 class BusinessViolationException(AppException):
     def __init__(
         self,
-        message_key: str = "errors.business.violation",
+        message_key: str,
         *,
         params: dict[str, Any] | None = None,
     ) -> None:
@@ -145,51 +103,25 @@ class BusinessViolationException(AppException):
 
 
 class RateLimitedException(AppException):
-    def __init__(
-        self,
-        message_key: str = "errors.rate_limit.too_many_requests",
-        *,
-        params: dict[str, Any] | None = None,
-        headers: dict[str, str] | None = None,
-    ) -> None:
+    def __init__(self, *, headers: dict[str, str] | None = None) -> None:
         super().__init__(
             ErrorCode.RATE_LIMITED,
-            message_key,
+            "errors.rate_limit.too_many_requests",
             status_code=429,
-            params=params,
             headers=headers,
         )
 
 
 class InternalException(AppException):
-    def __init__(
-        self,
-        *,
-        message_key: str = "errors.system.internal",
-        params: dict[str, Any] | None = None,
-        developer_message: str | None = None,
-    ) -> None:
+    def __init__(self, *, developer_message: str | None = None) -> None:
         super().__init__(
             ErrorCode.INTERNAL_ERROR,
-            message_key,
+            "errors.system.internal",
             status_code=500,
-            params=params,
             developer_message=developer_message,
         )
 
 
 class ServiceUnavailableException(AppException):
-    def __init__(
-        self,
-        message_key: str = "errors.system.unavailable",
-        *,
-        params: dict[str, Any] | None = None,
-        headers: dict[str, str] | None = None,
-    ) -> None:
-        super().__init__(
-            ErrorCode.SERVICE_UNAVAILABLE,
-            message_key,
-            status_code=503,
-            params=params,
-            headers=headers,
-        )
+    def __init__(self, *, headers: dict[str, str] | None = None) -> None:
+        super().__init__(ErrorCode.SERVICE_UNAVAILABLE, "errors.system.unavailable", status_code=503, headers=headers)

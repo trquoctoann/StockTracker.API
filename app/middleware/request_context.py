@@ -6,17 +6,12 @@ import uuid
 from starlette.types import ASGIApp, Receive, Scope, Send
 from structlog.contextvars import bind_contextvars, clear_contextvars
 
-from app.core.logger import get_logger
-
-_LOG = get_logger(__name__)
-
 _REQUEST_ID_HEADERS = ("x-request-id", "x-correlation-id", "traceparent")
 
 
 class RequestContextMiddleware:
     def __init__(self, app: ASGIApp):
         self.app = app
-        self._quiet_paths = {"/health", "/health/"}
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
         if scope["type"] != "http":
@@ -32,46 +27,29 @@ class RequestContextMiddleware:
         request_id = self._extract_request_id(headers)
 
         client = scope.get("client")
-        client_host = client[0] if client is not None else None
+        client_ip = client[0] if client else None
 
-        bind_contextvars(request_id=request_id, http_method=method, http_path=path, client_host=client_host)
-
-        status_code = 500
-        error: Exception | None = None
+        bind_contextvars(
+            request_id=request_id,
+            http_method=method,
+            http_path=path,
+            client_ip=client_ip,
+            request_start_perf=start,
+        )
 
         async def send_wrapper(message):
-            nonlocal status_code
             if message["type"] == "http.response.start":
-                status_code = message["status"]
+                duration_ms = round((time.perf_counter() - start) * 1000, 2)
+                bind_contextvars(
+                    status_code=message["status"],
+                    duration_ms=duration_ms,
+                )
             await send(message)
 
         try:
             await self.app(scope, receive, send_wrapper)
-        except Exception as exc:
-            error = exc
-            raise
         finally:
-            duration_ms = round((time.perf_counter() - start) * 1000, 3)
-
-            log_fn = self._select_log_level(path, status_code, error)
-
-            log_fn(
-                "HTTP_REQUEST",
-                status_code=status_code,
-                duration_ms=duration_ms,
-                outcome="ERROR" if error else "COMPLETE",
-            )
-
             clear_contextvars()
-
-    def _select_log_level(self, path: str, status: int, error: Exception | None):
-        if path in self._quiet_paths:
-            return _LOG.debug
-        if error or status >= 500:
-            return _LOG.error
-        if status >= 400:
-            return _LOG.warning
-        return _LOG.info
 
     @staticmethod
     def _extract_request_id(headers: dict[bytes, bytes]) -> str:

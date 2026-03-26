@@ -1,15 +1,28 @@
 from __future__ import annotations
 
+from collections import defaultdict
+from collections.abc import Callable
 from enum import StrEnum
 from typing import Any, ClassVar, Self
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
-from sqlmodel import SQLModel, desc, exists, select
+from fastapi import Request
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+from sqlalchemy import and_
+from sqlalchemy.orm import aliased
+from sqlmodel import SQLModel, desc
 
 from app.exception.exception import InternalException, ValidationException
 
 
-class PaginatedResponse[T](BaseModel):
+class BaseCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+
+class BaseResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+
+class PaginatedResponse[T](BaseResponse):
     items: list[T]
     total: int
     page: int
@@ -20,9 +33,9 @@ class PaginatedResponse[T](BaseModel):
 class PaginationQueryParameter(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
-    limit: int = Field(100, gt=0, le=100)
-    offset: int = Field(0, ge=0)
-    order_by: str | None = None
+    limit: int = Field(default=10, gt=0, le=100)
+    offset: int = Field(default=0, ge=0)
+    order_by: str | None = Field(default=None)
 
     orderable_fields: ClassVar[frozenset[str] | None] = None
 
@@ -81,70 +94,153 @@ class PaginationQueryParameter(BaseModel):
         return self
 
 
-class FilterQueryParameter[TFilterKey: str](BaseModel):
+class FilterQueryParameter(BaseModel):
     class RelatedFilterSpec:
-        model: type[SQLModel]
-        fk_on_root: str
-        pk_on_related: str = "id"
+        def __init__(
+            self,
+            model: type[SQLModel],
+            fk_on_root: str,
+            fk_on_related: str,
+        ):
+            self.model = model
+            self.fk_on_root = fk_on_root
+            self.fk_on_related = fk_on_related
+
+    class JoinType(StrEnum):
+        INNER = "inner"
+        LEFT = "left"
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
-    filterable_fields: ClassVar[frozenset[str] | None] = None
+    filterable_fields: ClassVar[set[str]] = set()
+    related_filter_specs: ClassVar[dict[str, RelatedFilterSpec]] = {}
 
-    related_filter_specs: ClassVar[dict[str, RelatedFilterSpec] | None] = None
+    eq: dict[str, Any] = Field(default_factory=dict)
+    neq: dict[str, Any] = Field(default_factory=dict)
+    gt: dict[str, Any] = Field(default_factory=dict)
+    gte: dict[str, Any] = Field(default_factory=dict)
+    lt: dict[str, Any] = Field(default_factory=dict)
+    lte: dict[str, Any] = Field(default_factory=dict)
+    contains: dict[str, str] = Field(default_factory=dict)
+    startswith: dict[str, str] = Field(default_factory=dict)
+    endswith: dict[str, str] = Field(default_factory=dict)
+    in_: dict[str, list[Any]] = Field(default_factory=dict, alias="in")
+    nin: dict[str, list[Any]] = Field(default_factory=dict)
+    null: dict[str, bool] = Field(default_factory=dict)
 
-    eq: dict[TFilterKey, Any] = Field(default_factory=dict)
-    neq: dict[TFilterKey, Any] = Field(default_factory=dict)
-    gt: dict[TFilterKey, Any] = Field(default_factory=dict)
-    gte: dict[TFilterKey, Any] = Field(default_factory=dict)
-    lt: dict[TFilterKey, Any] = Field(default_factory=dict)
-    lte: dict[TFilterKey, Any] = Field(default_factory=dict)
-    contains: dict[TFilterKey, str] = Field(default_factory=dict)
-    startswith: dict[TFilterKey, str] = Field(default_factory=dict)
-    endswith: dict[TFilterKey, str] = Field(default_factory=dict)
-    in_: dict[TFilterKey, list[Any]] = Field(
-        default_factory=dict,
-        validation_alias=AliasChoices("in"),
-        serialization_alias="in",
-    )
-    nin: dict[TFilterKey, list[Any]] = Field(default_factory=dict)
-    null: dict[TFilterKey, bool] = Field(default_factory=dict)
-
-    @staticmethod
-    def _split_field_key(key: str) -> tuple[str | None, str]:
-        if "." not in key:
-            return None, key
-        alias, rest = key.split(".", 1)
-        if "." in rest:
-            raise ValidationException(
-                message_key="errors.filter.relation_depth_exceeded",
-                params={"key": key},
-            )
-        return alias, rest
-
+    @model_validator(mode="before")
     @classmethod
-    def _resolve_related_spec(cls, alias: str) -> RelatedFilterSpec:
-        specs = cls.related_filter_specs
-        if not specs or alias not in specs:
-            raise ValidationException(
-                message_key="errors.filter.unknown_relation_alias",
-                params={"alias": alias},
-            )
-        return specs[alias]
+    def _merge_flat(cls, data: Any):
+        if not isinstance(data, dict):
+            return data
 
-    @staticmethod
-    def _filter_key_str(key: str | StrEnum) -> str:
-        return key.value if isinstance(key, StrEnum) else key
+        result = dict(data)
+
+        mapping = {
+            "eq": "eq",
+            "neq": "neq",
+            "gt": "gt",
+            "gte": "gte",
+            "lt": "lt",
+            "lte": "lte",
+            "contains": "contains",
+            "startswith": "startswith",
+            "endswith": "endswith",
+            "in": "in_",
+            "nin": "nin",
+            "null": "null",
+        }
+
+        to_remove = []
+
+        for key, value in list(result.items()):
+            if "." not in key:
+                continue
+
+            field, op = key.rsplit(".", 1)
+            if op not in mapping:
+                continue
+
+            target = mapping[op]
+            bucket = result.setdefault(target, {})
+
+            if not isinstance(bucket, dict):
+                bucket = {}
+                result[target] = bucket
+
+            if field in bucket:
+                raise ValidationException(
+                    message_key="errors.filter.conflicting_filter_definitions", params={"field": field, "operator": op}
+                )
+            if isinstance(value, list) and op not in {"in", "nin"}:
+                raise ValidationException(
+                    message_key="errors.filter.multiple_values_not_supported",
+                    params={"field": field, "operator": op},
+                )
+            if op in {"in", "nin"}:
+                value = cls._coerce_to_list(value)
+
+            bucket[field] = value
+            to_remove.append(key)
+
+        for k in to_remove:
+            result.pop(k, None)
+        return result
 
     @model_validator(mode="after")
-    def _validate_filter_keys(self) -> Self:
+    def _validate(self):
         allowed = self.__class__.filterable_fields
-        if allowed is None:
-            raise ValidationException(
-                message_key="errors.filter.filterable_fields_required",
-                params={"class_name": self.__class__.__name__},
+        if not allowed:
+            raise InternalException(
+                developer_message=f"{allowed} must assign filterable_fields when filter_keys are used",
             )
-        operator_maps: list[tuple[str, Any]] = [
+        for op_name, mapping in self._iter_ops():
+            for key in mapping:
+                if key not in allowed:
+                    raise ValidationException(
+                        message_key="errors.query.field_not_allowed",
+                        params={"field": key, "operator": op_name, "allowed": ", ".join(sorted(allowed))},
+                    )
+
+                alias, field = self._split(key)
+
+                if alias:
+                    spec = self.related_filter_specs.get(alias)
+                    if not spec:
+                        raise ValidationException(
+                            message_key="errors.query.unknown_relation_alias", params={"alias": alias}
+                        )
+
+                    if not hasattr(spec.model, field):
+                        raise ValidationException(
+                            message_key="errors.query.related_field_invalid",
+                            params={"field": field, "model_name": spec.model.__name__, "filter_key": key},
+                        )
+
+        return self
+
+    @staticmethod
+    def _split(key: str) -> tuple[str | None, str]:
+        if "." not in key:
+            return None, key
+        alias, field = key.split(".", 1)
+        return alias, field
+
+    @classmethod
+    def _coerce_to_list(cls, value: Any) -> list[Any]:
+        if isinstance(value, list):
+            return value
+        if isinstance(value, str):
+            value = value.strip()
+            if value.startswith("(") and value.endswith(")"):
+                value = value[1:-1]
+            if "," in value:
+                return [v.strip() for v in value.split(",") if v.strip()]
+            return [value]
+        return [value]
+
+    def _iter_ops(self):
+        return [
             ("eq", self.eq),
             ("neq", self.neq),
             ("gt", self.gt),
@@ -158,171 +254,127 @@ class FilterQueryParameter[TFilterKey: str](BaseModel):
             ("nin", self.nin),
             ("null", self.null),
         ]
-        for op_name, m in operator_maps:
-            for key in m:
-                key_s = self._filter_key_str(key)
-                if key_s not in allowed:
-                    raise ValidationException(
-                        message_key="errors.filter.field_not_allowed",
-                        params={
-                            "field": key_s,
-                            "operator": op_name,
-                            "allowed": ", ".join(sorted(allowed)),
-                        },
-                    )
-                alias, field = self._split_field_key(key_s)
-                if alias is None:
-                    continue
-                spec = self.__class__._resolve_related_spec(alias)
-                if not hasattr(spec.model, field):
-                    raise ValidationException(
-                        message_key="errors.filter.related_field_invalid",
-                        params={
-                            "field": field,
-                            "model_name": spec.model.__name__,
-                            "filter_key": key_s,
-                        },
-                    )
-        return self
 
-    def _fk_correlation(self, root_model: type[SQLModel], spec: RelatedFilterSpec) -> Any:
-        return getattr(root_model, spec.fk_on_root) == getattr(spec.model, spec.pk_on_related)
+    def _build_predicate(self, col, op: str, value):
+        if op == "eq":
+            return col == value
+        if op == "neq":
+            return col != value
+        if op == "gt":
+            return col > value
+        if op == "gte":
+            return col >= value
+        if op == "lt":
+            return col < value
+        if op == "lte":
+            return col <= value
+        if op == "contains":
+            return col.ilike(f"%{value}%")
+        if op == "startswith":
+            return col.ilike(f"{value}%")
+        if op == "endswith":
+            return col.ilike(f"%{value}")
+        if op == "in":
+            return col.in_(value)
+        if op == "nin":
+            return ~col.in_(value)
+        if op == "null":
+            return col.is_(None) if value else col.is_not(None)
 
-    def _related_exists(
-        self,
-        root_model: type[SQLModel],
-        alias: str,
-        *predicates: Any,
-    ) -> Any:
-        spec = self._resolve_related_spec(alias)
-        base = self._fk_correlation(root_model, spec)
-        return exists(
-            select(1).select_from(spec.model).where(base, *predicates),
+        raise ValidationException(
+            message_key="errors.query.field_not_allowed",
+            params={"field": col, "operator": op, "allowed": ", ".join(sorted(self.__class__.filterable_fields))},
         )
 
-    def _column(self, root_model: type[SQLModel], key: str) -> Any:
-        alias, name = self._split_field_key(key)
-        if alias is None:
-            return getattr(root_model, name)
-        spec = self._resolve_related_spec(alias)
-        return getattr(spec.model, name)
+    def _decide_join_type(self, op: str, value: Any) -> JoinType:
+        if op in {"neq", "nin"}:
+            return self.__class__.JoinType.LEFT
+        if op == "null":
+            return self.__class__.JoinType.LEFT if value is True else self.__class__.JoinType.INNER
+        return self.__class__.JoinType.INNER
 
-    def build_conditions(self, model: type[SQLModel]) -> list[Any]:
-        conditions: list[Any] = []
-
-        for field, value in self.eq.items():
-            field = self._filter_key_str(field)
-            alias, _ = self._split_field_key(field)
-            if alias is None:
-                conditions.append(self._column(model, field) == value)
+    def _rewrite_left_join_predicate(self, col, op: str, value):
+        if op == "neq":
+            return (col != value) | col.is_(None)
+        if op == "nin":
+            return (~col.in_(value)) | col.is_(None)
+        if op == "null":
+            if value:
+                return col.is_(None)
             else:
-                col = self._column(model, field)
-                conditions.append(self._related_exists(model, alias, col == value))
+                return col.is_not(None)
+        return self._build_predicate(col, op, value)
 
-        for field, value in self.neq.items():
-            field = self._filter_key_str(field)
-            alias, _ = self._split_field_key(field)
-            if alias is None:
-                conditions.append(self._column(model, field) != value)
-            else:
-                col = self._column(model, field)
-                conditions.append(self._related_exists(model, alias, col != value))
+    def build_conditions(self, root_model: type[SQLModel]):
+        joins = {}
+        join_types = {}
+        conditions = []
+        relation_predicates = {}
 
-        for field, value in self.gt.items():
-            field = self._filter_key_str(field)
-            alias, _ = self._split_field_key(field)
-            if alias is None:
-                conditions.append(self._column(model, field) > value)
-            else:
-                col = self._column(model, field)
-                conditions.append(self._related_exists(model, alias, col > value))
+        for op, mapping in self._iter_ops():
+            for key, value in mapping.items():
+                alias, field = self._split(key)
 
-        for field, value in self.gte.items():
-            field = self._filter_key_str(field)
-            alias, _ = self._split_field_key(field)
-            if alias is None:
-                conditions.append(self._column(model, field) >= value)
-            else:
-                col = self._column(model, field)
-                conditions.append(self._related_exists(model, alias, col >= value))
+                if alias is None:
+                    col = getattr(root_model, field)
+                    conditions.append(self._build_predicate(col, op, value))
+                    continue
 
-        for field, value in self.lt.items():
-            field = self._filter_key_str(field)
-            alias, _ = self._split_field_key(field)
-            if alias is None:
-                conditions.append(self._column(model, field) < value)
-            else:
-                col = self._column(model, field)
-                conditions.append(self._related_exists(model, alias, col < value))
+                spec = self.related_filter_specs[alias]
 
-        for field, value in self.lte.items():
-            field = self._filter_key_str(field)
-            alias, _ = self._split_field_key(field)
-            if alias is None:
-                conditions.append(self._column(model, field) <= value)
-            else:
-                col = self._column(model, field)
-                conditions.append(self._related_exists(model, alias, col <= value))
-
-        for field, value in self.contains.items():
-            field = self._filter_key_str(field)
-            alias, _ = self._split_field_key(field)
-            if alias is None:
-                conditions.append(self._column(model, field).ilike(f"%{value}%"))
-            else:
-                col = self._column(model, field)
-                conditions.append(self._related_exists(model, alias, col.ilike(f"%{value}%")))
-
-        for field, value in self.startswith.items():
-            field = self._filter_key_str(field)
-            alias, _ = self._split_field_key(field)
-            if alias is None:
-                conditions.append(self._column(model, field).ilike(f"{value}%"))
-            else:
-                col = self._column(model, field)
-                conditions.append(self._related_exists(model, alias, col.ilike(f"{value}%")))
-
-        for field, value in self.endswith.items():
-            field = self._filter_key_str(field)
-            alias, _ = self._split_field_key(field)
-            if alias is None:
-                conditions.append(self._column(model, field).ilike(f"%{value}"))
-            else:
-                col = self._column(model, field)
-                conditions.append(self._related_exists(model, alias, col.ilike(f"%{value}")))
-
-        for field, values in self.in_.items():
-            field = self._filter_key_str(field)
-            alias, _ = self._split_field_key(field)
-            if alias is None:
-                conditions.append(self._column(model, field).in_(values))
-            else:
-                col = self._column(model, field)
-                conditions.append(self._related_exists(model, alias, col.in_(values)))
-
-        for field, values in self.nin.items():
-            field = self._filter_key_str(field)
-            alias, _ = self._split_field_key(field)
-            if alias is None:
-                conditions.append(self._column(model, field).not_in(values))
-            else:
-                col = self._column(model, field)
-                conditions.append(self._related_exists(model, alias, col.not_in(values)))
-
-        for field, null in self.null.items():
-            field = self._filter_key_str(field)
-            alias, _ = self._split_field_key(field)
-            if alias is None:
-                col = self._column(model, field)
-                if null:
-                    conditions.append(col.is_(None))
+                if alias not in joins:
+                    alias_model = aliased(spec.model)
+                    joins[alias] = alias_model
+                    join_types[alias] = self._decide_join_type(op, value)
                 else:
-                    conditions.append(col.is_not(None))
-            else:
-                col = self._column(model, field)
-                if null:
-                    conditions.append(self._related_exists(model, alias, col.is_(None)))
-                else:
-                    conditions.append(self._related_exists(model, alias, col.is_not(None)))
+                    alias_model = joins[alias]
+                    jt = self._decide_join_type(op, value)
+                    if jt == self.__class__.JoinType.LEFT:
+                        join_types[alias] = self.__class__.JoinType.LEFT
 
-        return conditions
+                col = getattr(alias_model, field)
+
+                if join_types[alias] == self.__class__.JoinType.LEFT:
+                    pred = self._rewrite_left_join_predicate(col, op, value)
+                else:
+                    pred = self._build_predicate(col, op, value)
+
+                relation_predicates.setdefault(alias, []).append(pred)
+
+        join_clauses = []
+        for alias, preds in relation_predicates.items():
+            spec = self.related_filter_specs[alias]
+            alias_model = joins[alias]
+
+            on_clause = getattr(root_model, spec.fk_on_root) == getattr(alias_model, spec.fk_on_related)
+            join_clauses.append((alias, alias_model, on_clause, join_types[alias]))
+
+            conditions.append(and_(*preds))
+        return join_clauses, conditions
+
+
+def _normalize_query_params(request: Request) -> dict[str, Any]:
+    result: dict[str, list[Any]] = defaultdict(list)
+    for k, v in request.query_params.multi_items():
+        result[k].append(v)
+    return {k: v if len(v) > 1 else v[0] for k, v in result.items()}
+
+
+def build_query_param_dependency(
+    model_cls: type[BaseModel], *, include_fields: set[str] | None = None, exclude_fields: set[str] | None = None
+) -> Callable[[Request], BaseModel]:
+    def dependency(request: Request) -> BaseModel:
+        raw = _normalize_query_params(request)
+        if include_fields is not None:
+            data = {k: v for k, v in raw.items() if k in include_fields}
+        elif exclude_fields is not None:
+            data = {k: v for k, v in raw.items() if k not in exclude_fields}
+        else:
+            data = raw
+        return model_cls.model_validate(data)
+
+    return dependency
+
+
+def get_model_fields(model_cls: type[BaseModel]) -> set[str]:
+    return set(model_cls.model_fields.keys())

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import traceback
 from typing import Any
 
 from fastapi import FastAPI, Request, status
@@ -11,7 +10,7 @@ from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.config import settings
-from app.core.logger import get_logger
+from app.core.logger import format_exception_for_response, get_logger
 from app.exception.exception import AppException, ErrorCode
 from app.i18n.catalog import get_error_catalog
 from app.i18n.locale import get_current_locale
@@ -61,13 +60,12 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
         locale = get_current_locale()
         message = catalog.get(locale, exc.message_key, exc.params)
-        dev_msg = _app_exception_developer_message(exc)
         return _error_json_response(
             status_code=exc.status_code,
             code=exc.code,
             message=message,
             details=exc.details,
-            developer_message=dev_msg,
+            developer_message=exc.developer_message,
             headers=exc.headers,
         )
 
@@ -111,13 +109,13 @@ def register_exception_handlers(app: FastAPI) -> None:
         _LOG.error(
             "UNHANDLED_EXCEPTION",
             error_type=type(exc).__name__,
-            exc_info=(type(exc), exc, exc.__traceback__),
+            exc_info=exc,
         )
         locale = get_current_locale()
         message = catalog.get(locale, "errors.system.internal", None)
         dev_msg = None
         if settings.DEBUG:
-            dev_msg = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+            dev_msg = format_exception_for_response(exc)
         return _error_json_response(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             code=ErrorCode.INTERNAL_ERROR,
@@ -132,9 +130,6 @@ def _get_error_code_and_message_key(status_code: int) -> tuple[ErrorCode, str]:
         status.HTTP_401_UNAUTHORIZED: (ErrorCode.UNAUTHORIZED, "errors.auth.unauthorized"),
         status.HTTP_403_FORBIDDEN: (ErrorCode.FORBIDDEN, "errors.auth.forbidden"),
         status.HTTP_404_NOT_FOUND: (ErrorCode.NOT_FOUND, "errors.resource.not_found"),
-        status.HTTP_409_CONFLICT: (ErrorCode.BAD_REQUEST, "errors.resource.conflict"),
-        status.HTTP_410_GONE: (ErrorCode.BAD_REQUEST, "errors.resource.gone"),
-        status.HTTP_412_PRECONDITION_FAILED: (ErrorCode.BUSINESS_VIOLATION, "errors.business.precondition_failed"),
         status.HTTP_413_CONTENT_TOO_LARGE: (ErrorCode.PAYLOAD_TOO_LARGE, "errors.client.payload_too_large"),
         status.HTTP_415_UNSUPPORTED_MEDIA_TYPE: (
             ErrorCode.UNSUPPORTED_MEDIA_TYPE,
@@ -145,15 +140,3 @@ def _get_error_code_and_message_key(status_code: int) -> tuple[ErrorCode, str]:
         status.HTTP_503_SERVICE_UNAVAILABLE: (ErrorCode.SERVICE_UNAVAILABLE, "errors.system.unavailable"),
     }
     return mapping.get(status_code, (ErrorCode.BAD_REQUEST, "errors.client.bad_request"))
-
-
-def _merge_developer_messages(*parts: str | None) -> str | None:
-    merged = "\n\n".join(p.strip() for p in parts if p and str(p).strip())
-    return merged or None
-
-
-def _app_exception_developer_message(exc: AppException) -> str | None:
-    if not settings.DEBUG:
-        return None
-    cause_tb = "".join(traceback.format_exception(exc.__cause__)) if exc.__cause__ is not None else None
-    return _merge_developer_messages(exc.developer_message, cause_tb)

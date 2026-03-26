@@ -1,16 +1,19 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from app.core.logger import setup_logging
 
-from app.api.v1.router import api_v1_router
-from app.core.config import settings
-from app.core.logger import configure_logging, get_logger
-from app.exception.handler import register_exception_handlers
-from app.middleware.request_context import RequestContextMiddleware
+setup_logging()
+from fastapi import FastAPI  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
-configure_logging()
+from app.api.v1.router import api_v1_router  # noqa: E402
+from app.core.config import settings  # noqa: E402
+from app.core.database import dispose_engine  # noqa: E402
+from app.core.logger import get_logger  # noqa: E402
+from app.exception.handler import register_exception_handlers  # noqa: E402
+from app.middleware.request_context import RequestContextMiddleware  # noqa: E402
+
 _LOG = get_logger(__name__)
 
 
@@ -23,6 +26,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         environment=settings.ENVIRONMENT,
     )
     yield
+    await dispose_engine()
     _LOG.info("APPLICATION_SHUTDOWN")
 
 

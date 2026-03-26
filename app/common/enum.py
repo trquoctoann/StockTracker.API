@@ -2,21 +2,21 @@ from enum import Enum
 
 
 class RecordStatus(Enum):
-    ENABLED = "enabled"
-    DELETED = "deleted"
+    ENABLED = "ENABLED"
+    DELETED = "DELETED"
 
 
 class UserStatus(Enum):
-    PENDING = "pending"
-    ACTIVE = "active"
-    INACTIVE = "inactive"
+    PENDING = "PENDING"
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
 
 
 class RoleType(Enum):
-    DEFAULT = "default"
-    CUSTOM = "custom"
+    DEFAULT = "DEFAULT"
+    CUSTOM = "CUSTOM"
 
 
 class RoleScope(Enum):
-    ADMIN = "admin"
-    TENANT = "tenant"
+    ADMIN = "ADMIN"
+    TENANT = "TENANT"
