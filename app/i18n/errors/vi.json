@@ -27,7 +27,13 @@
     "resource": {
       "not_found": "Không tìm thấy tài nguyên được yêu cầu."
     },
-    "business": {},
+    "business": {
+      "role": {
+        "permission_ids_invalid": "ID quyền phải là một danh sách.",
+        "permission_scope_mismatch": "Quyền '{permission_code}' không phù hợp với phạm vi vai trò '{role_scope}'.",
+        "not_found": "Không tìm thấy vai trò có id: {id}."
+      }
+    },
     "rate_limit": {
       "too_many_requests": "Quá nhiều yêu cầu. Vui lòng thử lại sau."
     },

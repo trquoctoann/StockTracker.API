@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import uuid
 from collections import defaultdict
 from collections.abc import Callable
+from enum import Enum as PyEnum
 from enum import StrEnum
 from typing import Any, ClassVar, Self
 
@@ -19,7 +21,7 @@ class BaseCommand(BaseModel):
 
 
 class BaseResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
 
 
 class PaginatedResponse[T](BaseResponse):
@@ -127,6 +129,58 @@ class FilterQueryParameter(BaseModel):
     in_: dict[str, list[Any]] = Field(default_factory=dict, alias="in")
     nin: dict[str, list[Any]] = Field(default_factory=dict)
     null: dict[str, bool] = Field(default_factory=dict)
+
+    @classmethod
+    def merge_ops(
+        cls,
+        filter_params: Self | None,
+        **extra_ops: dict[str, Any],
+    ) -> Self:
+        raw: dict[str, Any] = filter_params.model_dump(exclude_none=True) if filter_params else {}
+
+        for op_name, extra_mapping in extra_ops.items():
+            if not extra_mapping:
+                continue
+            existing: dict[str, Any] = raw.get(op_name) or {}
+            merged = {**existing, **extra_mapping}
+            raw[op_name] = merged
+
+        return cls(**raw)
+
+    @staticmethod
+    def _coerce_single_value_for_column(col: Any, value: Any) -> Any:
+        if value is None:
+            return None
+
+        col_type = getattr(col, "type", None)
+        if col_type is None:
+            return value
+        try:
+            python_type = col_type.python_type
+        except NotImplementedError:
+            return value
+        if not isinstance(python_type, type):
+            return value
+
+        if issubclass(python_type, int) and isinstance(value, str):
+            v = value.strip()
+            if v.lstrip("-").isdigit():
+                return int(v)
+
+        if (python_type is uuid.UUID or issubclass(python_type, uuid.UUID)) and isinstance(value, str):
+            return uuid.UUID(value.strip())
+
+        if issubclass(python_type, PyEnum) and isinstance(value, str):
+            return python_type(value)
+        return value
+
+    @classmethod
+    def _coerce_filter_value_for_column(cls, col: Any, op: str, value: Any) -> Any:
+        if op in {"eq", "neq"}:
+            return cls._coerce_single_value_for_column(col, value)
+        if op in {"in", "nin"} and isinstance(value, list):
+            return [cls._coerce_single_value_for_column(col, v) for v in value]
+        return value
 
     @model_validator(mode="before")
     @classmethod
@@ -317,6 +371,7 @@ class FilterQueryParameter(BaseModel):
 
                 if alias is None:
                     col = getattr(root_model, field)
+                    value = self._coerce_filter_value_for_column(col, op, value)
                     conditions.append(self._build_predicate(col, op, value))
                     continue
 
@@ -333,6 +388,7 @@ class FilterQueryParameter(BaseModel):
                         join_types[alias] = self.__class__.JoinType.LEFT
 
                 col = getattr(alias_model, field)
+                value = self._coerce_filter_value_for_column(col, op, value)
 
                 if join_types[alias] == self.__class__.JoinType.LEFT:
                     pred = self._rewrite_left_join_predicate(col, op, value)
