@@ -125,3 +125,11 @@ class RoleQueryService(QueryService[RoleEntity, RoleFetchSpec]):
                     permission_map[pid] for pid in role_permission_ids_for_role if pid in permission_map
                 ]
         return entities
+
+    async def find_all_by_ids(self, ids: list[int], *, fetch_spec: RoleFetchSpec | None = None) -> list[RoleEntity]:
+        entities = await self._role_repository.find_all(
+            filter_param=RoleFilterParameter(in_={RoleFilterField.id: list[int](set[int](ids))})  # pyright: ignore[reportCallIssue]
+        )
+        if fetch_spec:
+            entities = await self._enrich_entities(entities, fetch_spec)
+        return entities

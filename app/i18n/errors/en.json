@@ -32,6 +32,16 @@
         "permission_ids_invalid": "Permission ids must be a list.",
         "permission_scope_mismatch": "Permission '{permission_code}' does not match role scope '{role_scope}'.",
         "not_found": "Role with id: {id} was not found."
+      },
+      "user": {
+        "password_strength": "Password must contain at least one uppercase letter, one digit, and one special character.",
+        "not_found": "User with id: {id} was not found.",
+        "username_taken": "Username: '{username}' is already in use.",
+        "email_taken": "Email: '{email}' is already in use.",
+        "role_scope_mismatch": "Role ids {role_ids} do not match expected scope '{expected_scope}'."
+      },
+      "tenant": {
+        "not_found": "Tenant with id: {id} was not found."
       }
     },
     "rate_limit": {
