@@ -51,23 +51,8 @@ def register_exception_handlers(app: FastAPI) -> None:
     catalog = get_error_catalog()
 
     @app.exception_handler(AppException)
-    async def app_exception_handler(_request: Request, exc: AppException) -> JSONResponse:
-        _LOG.warning(
-            "APP_EXCEPTION",
-            code=str(exc.code),
-            status_code=exc.status_code,
-            message_key=exc.message_key,
-        )
-        locale = get_current_locale()
-        message = catalog.get(locale, exc.message_key, exc.params)
-        return _error_json_response(
-            status_code=exc.status_code,
-            code=exc.code,
-            message=message,
-            details=exc.details,
-            developer_message=exc.developer_message,
-            headers=exc.headers,
-        )
+    async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
+        return await _respond_app_exception(request, exc)
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(
@@ -105,7 +90,9 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(Exception)
-    async def unhandled_exception_handler(_request: Request, exc: Exception) -> JSONResponse:
+    async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+        if isinstance(exc, AppException):
+            return await _respond_app_exception(request, exc)
         _LOG.error(
             "UNHANDLED_EXCEPTION",
             error_type=type(exc).__name__,
@@ -121,6 +108,24 @@ def register_exception_handlers(app: FastAPI) -> None:
             code=ErrorCode.INTERNAL_ERROR,
             message=message,
             developer_message=dev_msg,
+        )
+
+    async def _respond_app_exception(_request: Request, exc: AppException) -> JSONResponse:
+        _LOG.warning(
+            "APP_EXCEPTION",
+            code=str(exc.code),
+            status_code=exc.status_code,
+            message_key=exc.message_key,
+        )
+        locale = get_current_locale()
+        message = catalog.get(locale, exc.message_key, exc.params)
+        return _error_json_response(
+            status_code=exc.status_code,
+            code=exc.code,
+            message=message,
+            details=exc.details,
+            developer_message=exc.developer_message,
+            headers=exc.headers,
         )
 
 

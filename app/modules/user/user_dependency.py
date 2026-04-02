@@ -3,12 +3,15 @@ from typing import Annotated
 from fastapi import Depends
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_session
 from app.modules.role.role_dependency import RoleQueryServiceDep
 from app.modules.tenant.tenant_dependency import TenantQueryServiceDep
 from app.modules.user.application.user_domain_service import UserDomainService
 from app.modules.user.application.user_query_service import UserQueryService
+from app.modules.user.domain.identity_provider import IdentityProvider
 from app.modules.user.domain.user_repository import UserRepository, UserRoleRepository
+from app.modules.user.external.keycloak_identity_provider import KeycloakIdentityProvider
 from app.modules.user.infrastructure.persistence.user_repository_impl import UserRepositoryImpl, UserRoleRepositoryImpl
 
 
@@ -18,6 +21,18 @@ async def get_user_repository(session: Annotated[AsyncSession, Depends(get_sessi
 
 def get_user_role_repository(session: Annotated[AsyncSession, Depends(get_session)]) -> UserRoleRepository:
     return UserRoleRepositoryImpl(session)
+
+
+def get_identity_provider() -> IdentityProvider:
+    return KeycloakIdentityProvider.build(
+        server_url=settings.OIDC_KEYCLOAK_SERVER_URL,
+        realm_name=settings.OIDC_KEYCLOAK_REALM,
+        username=settings.OIDC_KEYCLOAK_ADMIN_USERNAME,
+        password=settings.OIDC_KEYCLOAK_ADMIN_PASSWORD,
+        client_id=settings.OIDC_KEYCLOAK_CLIENT_ID,
+        client_secret_key=settings.OIDC_KEYCLOAK_CLIENT_SECRET,
+        verify=settings.OIDC_KEYCLOAK_VERIFY_TLS,
+    )
 
 
 def get_user_query_service(
@@ -36,6 +51,7 @@ def get_user_domain_service(
     query_service: Annotated[UserQueryService, Depends(get_user_query_service)],
     tenant_query_service: TenantQueryServiceDep,
     role_query_service: RoleQueryServiceDep,
+    identity_provider: Annotated[IdentityProvider, Depends(get_identity_provider)],
 ) -> UserDomainService:
     return UserDomainService(
         session,
@@ -44,6 +60,7 @@ def get_user_domain_service(
         query_service,
         tenant_query_service,
         role_query_service,
+        identity_provider,
     )
 
 

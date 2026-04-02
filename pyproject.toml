@@ -12,6 +12,7 @@ dependencies = [
     "pydantic-settings",
     "passlib[bcrypt]",
     "python-jose[cryptography]",
+    "python-keycloak",
     "python-multipart",
     "pydantic[email]>=2.12.5",
     "structlog>=24.4.0",

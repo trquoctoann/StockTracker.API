@@ -12,6 +12,7 @@ from app.core.config import settings  # noqa: E402
 from app.core.database import dispose_engine  # noqa: E402
 from app.core.logger import get_logger  # noqa: E402
 from app.exception.handler import register_exception_handlers  # noqa: E402
+from app.middleware.auth_context import AuthContextMiddleware  # noqa: E402
 from app.middleware.request_context import RequestContextMiddleware  # noqa: E402
 
 _LOG = get_logger(__name__)
@@ -40,6 +41,7 @@ def create_app() -> FastAPI:
     )
 
     app.add_middleware(RequestContextMiddleware)
+    app.add_middleware(AuthContextMiddleware)
 
     app.add_middleware(
         CORSMiddleware,

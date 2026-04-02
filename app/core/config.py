@@ -37,6 +37,15 @@ class Settings(BaseSettings):
     DEFAULT_LOCALE: str
     SUPPORTED_LOCALES: list[str]
 
+    # OIDC Keycloak
+    OIDC_KEYCLOAK_SERVER_URL: str
+    OIDC_KEYCLOAK_REALM: str
+    OIDC_KEYCLOAK_CLIENT_ID: str
+    OIDC_KEYCLOAK_CLIENT_SECRET: str
+    OIDC_KEYCLOAK_ADMIN_USERNAME: str
+    OIDC_KEYCLOAK_ADMIN_PASSWORD: str
+    OIDC_KEYCLOAK_VERIFY_TLS: bool
+
     @property
     def log_service_name(self) -> str:
         return (self.SERVICE_NAME or self.APP_NAME).strip()

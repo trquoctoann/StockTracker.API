@@ -38,7 +38,11 @@
         "not_found": "User with id: {id} was not found.",
         "username_taken": "Username: '{username}' is already in use.",
         "email_taken": "Email: '{email}' is already in use.",
-        "role_scope_mismatch": "Role ids {role_ids} do not match expected scope '{expected_scope}'."
+        "role_scope_mismatch": "Role ids {role_ids} do not match expected scope '{expected_scope}'.",
+        "identity_not_linked": "User is not linked to an identity provider account.",
+        "identity_not_found": "User was not found in identity provider.",
+        "identity_conflict": "Identity provider data conflicts with an existing user.",
+        "identity_invalid_id": "Identity provider returned an invalid user id."
       },
       "tenant": {
         "not_found": "Tenant with id: {id} was not found."

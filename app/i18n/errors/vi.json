@@ -38,7 +38,11 @@
         "not_found": "Không tìm thấy người dùng có id {id}.",
         "username_taken": "Tên đăng nhập: '{username}' đã được sử dụng.",
         "email_taken": "Email: '{email}' đã được sử dụng.",
-        "role_scope_mismatch": "Các role id {role_ids} không đúng scope yêu cầu '{expected_scope}'."
+        "role_scope_mismatch": "Các role id {role_ids} không đúng scope yêu cầu '{expected_scope}'.",
+        "identity_not_linked": "Người dùng chưa được liên kết với tài khoản định danh.",
+        "identity_not_found": "Không tìm thấy người dùng trên hệ thống định danh.",
+        "identity_conflict": "Dữ liệu định danh bị trùng với người dùng đã tồn tại.",
+        "identity_invalid_id": "Hệ thống định danh trả về user id không hợp lệ."
       },
       "tenant": {
         "not_found": "Không tìm thấy tenant có id: {id}."

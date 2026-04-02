@@ -14,6 +14,12 @@ from app.modules.role.application.role_query_service import RoleQueryService
 from app.modules.tenant.application.tenant_query_service import TenantQueryService
 from app.modules.user.application.command.user_command import CreateUserCommand, SetUserRolesCommand, UpdateUserCommand
 from app.modules.user.application.user_query_service import UserFetchSpec, UserQueryService
+from app.modules.user.domain.identity_provider import (
+    IdentityCreateUserPayload,
+    IdentityProvider,
+    IdentityUpdatePasswordPayload,
+    IdentityUpdateProfilePayload,
+)
 from app.modules.user.domain.user_entity import UserEntity
 from app.modules.user.domain.user_repository import UserRepository, UserRoleRepository
 
@@ -29,6 +35,7 @@ class UserDomainService(CRUDService[UserEntity]):
         query_service: UserQueryService,
         tenant_query_service: TenantQueryService,
         role_query_service: RoleQueryService,
+        identity_provider: IdentityProvider,
     ) -> None:
         self._session = session
         self._user_repository = user_repository
@@ -36,18 +43,32 @@ class UserDomainService(CRUDService[UserEntity]):
         self._query_service = query_service
         self._tenant_query_service = tenant_query_service
         self._role_query_service = role_query_service
+        self._identity_provider = identity_provider
 
     async def create(self, command: CreateUserCommand) -> UserEntity:
         async with TransactionManager(self._session):
             logger.debug("USER_CREATING", command=command)
 
             await self.validate_command(command)
+            identity_user_id = await self._identity_provider.create_user(
+                IdentityCreateUserPayload(
+                    username=command.username,
+                    email=command.email,
+                    first_name=command.first_name,
+                    last_name=command.last_name,
+                    password=command.password,
+                )
+            )
+            try:
+                keycloak_uuid = uuid.UUID(identity_user_id)
+            except ValueError as exc:
+                raise BusinessViolationException(message_key="errors.business.user.identity_invalid_id") from exc
 
             entity = SchemaMapper.command_to_entity(
                 command,
                 UserEntity,
                 overrides={
-                    "id": uuid.uuid4(),
+                    "id": keycloak_uuid,
                     "status": UserStatus.ACTIVE,
                     "record_status": RecordStatus.ENABLED,
                     "version": 1,
@@ -67,6 +88,13 @@ class UserDomainService(CRUDService[UserEntity]):
             existing = await self._query_service.get_by_id(command.id)
 
             await self.validate_command(command, existing)
+            await self._identity_provider.update_profile(
+                IdentityUpdateProfilePayload(
+                    identity_user_id=str(existing.id),
+                    first_name=command.first_name,
+                    last_name=command.last_name,
+                )
+            )
 
             updating = SchemaMapper.merge_source_into_target(
                 command,
@@ -134,11 +162,44 @@ class UserDomainService(CRUDService[UserEntity]):
             )
             return await self._query_service.get_by_id(user.id, fetch_spec=UserFetchSpec(user_roles=True))
 
+    async def update_profile(
+        self,
+        user_id: uuid.UUID,
+        *,
+        first_name: str,
+        last_name: str | None,
+    ) -> UserEntity:
+        async with TransactionManager(self._session):
+            existing = await self._query_service.get_by_id(user_id)
+
+            existing.first_name = first_name
+            existing.last_name = last_name
+            existing.version += 1
+
+            await self._identity_provider.update_profile(
+                IdentityUpdateProfilePayload(
+                    identity_user_id=str(existing.id),
+                    first_name=first_name,
+                    last_name=last_name,
+                )
+            )
+
+            saved = await self._user_repository.bulk_update([existing])
+            return saved[0]
+
+    async def update_password(self, user_id: uuid.UUID, *, new_password: str) -> None:
+        async with TransactionManager(self._session):
+            user = await self._query_service.get_by_id(user_id)
+            await self._identity_provider.update_password(
+                IdentityUpdatePasswordPayload(identity_user_id=str(user.id), new_password=new_password, temporary=False)
+            )
+
     async def delete(self, user_id: uuid.UUID) -> None:
         async with TransactionManager(self._session):
             logger.debug("USER_DELETING", id=user_id)
 
             existing = await self._query_service.get_by_id(user_id)
+            await self._identity_provider.delete_user(str(existing.id))
             existing.record_status = RecordStatus.DELETED
             existing.version += 1
             await self._user_repository.bulk_update([existing])
