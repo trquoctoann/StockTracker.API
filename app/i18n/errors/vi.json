@@ -6,6 +6,8 @@
     },
     "auth": {
       "unauthorized": "Vui lòng đăng nhập hoặc cung cấp thông tin xác thực.",
+      "identity_token_unauthorized": "Token định danh không hợp lệ.",
+      "context_token_unauthorized": "Token ngữ cảnh không hợp lệ.",
       "forbidden": "Người dùng không có quyền thực hiện thao tác này."
     },
     "client": {
@@ -28,6 +30,10 @@
       "not_found": "Không tìm thấy tài nguyên được yêu cầu."
     },
     "business": {
+      "account": {
+        "scope_tenant_tenant_id_required": "Phạm vi 'TENANT' yêu cầu tenant_id.",
+        "scope_admin_tenant_id_not_allowed": "Phạm vi 'ADMIN' không cho phép tenant_id."
+      },
       "role": {
         "permission_ids_invalid": "ID quyền phải là một danh sách.",
         "permission_scope_mismatch": "Quyền '{permission_code}' không phù hợp với phạm vi vai trò '{role_scope}'.",

@@ -7,6 +7,8 @@ from typing import Any
 class ErrorCode(StrEnum):
     VALIDATION_ERROR = "VALIDATION_ERROR"
     UNAUTHORIZED = "UNAUTHORIZED"
+    IDENTITY_TOKEN_UNAUTHORIZED = "IDENTITY_TOKEN_UNAUTHORIZED"
+    CONTEXT_TOKEN_UNAUTHORIZED = "CONTEXT_TOKEN_UNAUTHORIZED"
     FORBIDDEN = "FORBIDDEN"
     NOT_FOUND = "NOT_FOUND"
     BAD_REQUEST = "BAD_REQUEST"
@@ -60,6 +62,26 @@ class ValidationException(AppException):
 class UnauthorizedException(AppException):
     def __init__(self, *, headers: dict[str, str] | None = None) -> None:
         super().__init__(ErrorCode.UNAUTHORIZED, "errors.auth.unauthorized", status_code=401, headers=headers)
+
+
+class IdentityTokenUnauthorizedException(AppException):
+    def __init__(self, *, headers: dict[str, str] | None = None) -> None:
+        super().__init__(
+            ErrorCode.IDENTITY_TOKEN_UNAUTHORIZED,
+            "errors.auth.identity_token_unauthorized",
+            status_code=401,
+            headers=headers,
+        )
+
+
+class ContextTokenUnauthorizedException(AppException):
+    def __init__(self, *, headers: dict[str, str] | None = None) -> None:
+        super().__init__(
+            ErrorCode.CONTEXT_TOKEN_UNAUTHORIZED,
+            "errors.auth.context_token_unauthorized",
+            status_code=401,
+            headers=headers,
+        )
 
 
 class ForbiddenException(AppException):

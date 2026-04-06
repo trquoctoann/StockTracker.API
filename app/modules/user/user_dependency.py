@@ -11,7 +11,7 @@ from app.modules.user.application.user_domain_service import UserDomainService
 from app.modules.user.application.user_query_service import UserQueryService
 from app.modules.user.domain.identity_provider import IdentityProvider
 from app.modules.user.domain.user_repository import UserRepository, UserRoleRepository
-from app.modules.user.external.keycloak_identity_provider import KeycloakIdentityProvider
+from app.modules.user.infrastructure.external.keycloak_identity_provider import KeycloakIdentityProvider
 from app.modules.user.infrastructure.persistence.user_repository_impl import UserRepositoryImpl, UserRoleRepositoryImpl
 
 

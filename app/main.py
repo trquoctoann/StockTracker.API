@@ -1,6 +1,8 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+from app.common.auth.context_token_codec import get_context_token_codec
+from app.common.auth.identity_token_codec import get_identity_token_codec
 from app.core.logger import setup_logging
 
 setup_logging()
@@ -41,7 +43,9 @@ def create_app() -> FastAPI:
     )
 
     app.add_middleware(RequestContextMiddleware)
-    app.add_middleware(AuthContextMiddleware)
+    app.add_middleware(
+        AuthContextMiddleware, identity_codec=get_identity_token_codec(), context_codec=get_context_token_codec()
+    )
 
     app.add_middleware(
         CORSMiddleware,

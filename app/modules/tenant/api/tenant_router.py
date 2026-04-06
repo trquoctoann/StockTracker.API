@@ -2,6 +2,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Path, status
 
+from app.common.auth.auth_access import require_context_permissions
+from app.common.auth.permission_codes import PermissionCode
 from app.common.base_mapper import SchemaMapper
 from app.common.base_schema import PaginatedResponse, build_query_param_dependency, get_model_fields
 from app.core.logger import get_logger
@@ -29,6 +31,7 @@ FilterQueryParamDep = build_query_param_dependency(
 
 @router.post("", response_model=ResponseTenant, status_code=status.HTTP_201_CREATED)
 async def create_tenant(
+    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.TENANT_CREATE))],
     body: Annotated[TenantCreateRequest, Body()],
     domain_service: TenantDomainServiceDep,
 ) -> ResponseTenant:
@@ -39,6 +42,7 @@ async def create_tenant(
 
 @router.put("/{tenant_id}", response_model=ResponseTenant, status_code=status.HTTP_200_OK)
 async def update_tenant(
+    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.TENANT_UPDATE))],
     tenant_id: Annotated[int, Path()],
     body: Annotated[TenantUpdateRequest, Body()],
     domain_service: TenantDomainServiceDep,
@@ -50,6 +54,7 @@ async def update_tenant(
 
 @router.delete("/{tenant_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_tenant(
+    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.TENANT_DELETE))],
     tenant_id: Annotated[int, Path()],
     domain_service: TenantDomainServiceDep,
 ) -> None:
@@ -59,6 +64,7 @@ async def delete_tenant(
 
 @router.get("", response_model=PaginatedResponse[ResponseTenant])
 async def get_page_tenants(
+    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.TENANT_READ))],
     filter_params: Annotated[TenantFilterParameter, Depends(FilterQueryParamDep)],
     pagination: Annotated[TenantPaginationParameter, Depends(PaginationQueryParamDep)],
     query_service: TenantQueryServiceDep,
@@ -80,6 +86,7 @@ async def get_page_tenants(
 
 @router.get("/all", response_model=list[ResponseTenant])
 async def get_all_tenants(
+    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.TENANT_READ))],
     filter_params: Annotated[TenantFilterParameter, Depends(FilterQueryParamDep)],
     query_service: TenantQueryServiceDep,
 ) -> list[ResponseTenant]:
@@ -90,6 +97,7 @@ async def get_all_tenants(
 
 @router.get("/{tenant_id}", response_model=ResponseTenant)
 async def get_tenant(
+    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.TENANT_READ))],
     tenant_id: Annotated[int, Path()],
     query_service: TenantQueryServiceDep,
 ) -> ResponseTenant:

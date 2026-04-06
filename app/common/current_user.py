@@ -6,6 +6,7 @@ from uuid import UUID
 
 from fastapi import Depends, Request
 
+from app.common.auth.auth_access import get_authenticated_principal
 from app.exception.exception import UnauthorizedException
 from app.modules.role.application.role_query_service import RoleFetchSpec, RoleQueryService
 from app.modules.role.role_dependency import RoleQueryServiceDep
@@ -45,10 +46,7 @@ class CurrentUserService:
         if self._cached_user is not None:
             return self._cached_user
 
-        principal = getattr(self._request.state, "token_principal", None)
-        if principal is None:
-            raise UnauthorizedException(headers={"WWW-Authenticate": "Bearer"})
-
+        principal = get_authenticated_principal(self._request)
         try:
             user_id = UUID(principal.subject)
         except ValueError as exc:

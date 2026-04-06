@@ -46,6 +46,12 @@ class Settings(BaseSettings):
     OIDC_KEYCLOAK_ADMIN_PASSWORD: str
     OIDC_KEYCLOAK_VERIFY_TLS: bool
 
+    # Context token
+    AUTH_CONTEXT_TOKEN_SECRET: str
+    AUTH_CONTEXT_TOKEN_ALGORITHM: str
+    AUTH_CONTEXT_TOKEN_TTL_SECONDS: int
+    AUTH_CONTEXT_TOKEN_ISSUER: str
+
     @property
     def log_service_name(self) -> str:
         return (self.SERVICE_NAME or self.APP_NAME).strip()

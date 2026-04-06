@@ -3,21 +3,21 @@ from __future__ import annotations
 from starlette.types import ASGIApp, Receive, Scope, Send
 from structlog.contextvars import bind_contextvars
 
-from app.common.auth.keycloak_jwt_decoder import KeycloakJwtDecoder
+from app.common.auth.context_token_codec import ContextTokenCodec
+from app.common.auth.identity_token_codec import IdentityTokenCodec
 from app.common.current_user import reset_current_user_id, set_current_user_id
-from app.core.config import settings
 
 
 class AuthContextMiddleware:
-    def __init__(self, app: ASGIApp):
+    def __init__(
+        self,
+        app: ASGIApp,
+        identity_codec: IdentityTokenCodec,
+        context_codec: ContextTokenCodec,
+    ):
         self.app = app
-        self._decoder = KeycloakJwtDecoder.build(
-            server_url=settings.OIDC_KEYCLOAK_SERVER_URL,
-            realm_name=settings.OIDC_KEYCLOAK_REALM,
-            client_id=settings.OIDC_KEYCLOAK_CLIENT_ID,
-            client_secret_key=settings.OIDC_KEYCLOAK_CLIENT_SECRET,
-            verify=settings.OIDC_KEYCLOAK_VERIFY_TLS,
-        )
+        self._identity_codec = identity_codec
+        self._context_codec = context_codec
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
         if scope["type"] != "http":
@@ -30,10 +30,14 @@ class AuthContextMiddleware:
         if auth_header:
             token = self._extract_bearer_token(auth_header.decode("utf-8", errors="ignore"))
             if token:
-                principal = await self._decoder.decode_access_token(token)
+                principal = (
+                    self._context_codec.decode(token)
+                    if ContextTokenCodec.is_context_token(token)
+                    else await self._identity_codec.decode(token)
+                )
                 state = scope.setdefault("state", {})
                 if isinstance(state, dict):
-                    state["token_principal"] = principal
+                    state["auth_principal"] = principal
                 bind_contextvars(token_sub=principal.subject)
                 user_ctx_token = set_current_user_id(principal.subject)
         try:

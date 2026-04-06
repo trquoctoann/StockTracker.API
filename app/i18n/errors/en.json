@@ -6,6 +6,8 @@
     },
     "auth": {
       "unauthorized": "Authentication is required.",
+      "identity_token_unauthorized": "Invalid identity token.",
+      "context_token_unauthorized": "Invalid context token.",
       "forbidden": "User does not have permission to perform this action."
     },
     "client": {
@@ -28,6 +30,10 @@
       "not_found": "The requested resource could not be found."
     },
     "business": {
+      "account": {
+        "scope_tenant_tenant_id_required": "Scope 'TENANT' requires tenant_id.",
+        "scope_admin_tenant_id_not_allowed": "Scope 'ADMIN' does not allow tenant_id."
+      },
       "role": {
         "permission_ids_invalid": "Permission ids must be a list.",
         "permission_scope_mismatch": "Permission '{permission_code}' does not match role scope '{role_scope}'.",

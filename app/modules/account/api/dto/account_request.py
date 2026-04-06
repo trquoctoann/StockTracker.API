@@ -1,6 +1,7 @@
 from pydantic import Field
 
 from app.common.base_schema import BaseCommand
+from app.common.enum import RoleScope
 from app.modules.user.application.command.user_command import Password
 
 
@@ -11,3 +12,8 @@ class AccountUpdateProfileRequest(BaseCommand):
 
 class AccountUpdatePasswordRequest(BaseCommand):
     new_password: Password
+
+
+class AccountSwitchContextRequest(BaseCommand):
+    scope: RoleScope
+    tenant_id: int | None = None
