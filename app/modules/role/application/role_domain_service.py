@@ -66,7 +66,7 @@ class RoleDomainService(CRUDService[RoleEntity]):
         async with TransactionManager(self._session):
             logger.debug("ROLE_UPDATING", command=command)
 
-            existing = await self._query_service.get_by_id(command.id)
+            existing = await self._query_service.get_by_id(command.id, fetch_spec=RoleFetchSpec(permissions=True))
             updating = SchemaMapper.merge_source_into_target(
                 command,
                 existing,
@@ -84,12 +84,20 @@ class RoleDomainService(CRUDService[RoleEntity]):
                     }
                 ),
             )
-            updating.version += 1
+
+            permissions_changed = False
+            if command.permission_ids is not None:
+                current_permission_ids = {
+                    permission.id for permission in (existing.permissions or []) if permission.id is not None
+                }
+                permissions_changed = current_permission_ids != command.permission_ids
+            if permissions_changed:
+                updating.version += 1
 
             saved = await self._role_repository.bulk_update([updating])
             saved_role = saved[0]
 
-            if command.permission_ids is not None:
+            if command.permission_ids is not None and permissions_changed:
                 await self._set_role_permissions(role_id=saved_role.id, permission_ids=command.permission_ids)
 
             return saved_role
@@ -109,15 +117,22 @@ class RoleDomainService(CRUDService[RoleEntity]):
         async with TransactionManager(self._session):
             logger.debug("ROLE_SET_PERMISSIONS", command=command)
 
-            existing = await self._query_service.get_by_id(command.id)
-            existing.version += 1
-            await self._role_repository.bulk_update([existing])
+            existing = await self._query_service.get_by_id(command.id, fetch_spec=RoleFetchSpec(permissions=True))
+            current_permission_ids = {
+                permission.id for permission in (existing.permissions or []) if permission.id is not None
+            }
+            permissions_changed = current_permission_ids != command.permission_ids
+            if permissions_changed:
+                existing.version += 1
+                await self._role_repository.bulk_update([existing])
 
-            return await self._set_role_permissions(
-                role_id=command.id,
-                permission_ids=command.permission_ids,
-                return_enriched=True,
-            )
+            if permissions_changed:
+                return await self._set_role_permissions(
+                    role_id=command.id,
+                    permission_ids=command.permission_ids,
+                    return_enriched=True,
+                )
+            return existing
 
     async def _set_role_permissions(
         self,

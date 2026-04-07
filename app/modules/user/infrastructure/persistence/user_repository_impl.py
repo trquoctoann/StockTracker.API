@@ -114,11 +114,13 @@ class UserRoleRepositoryImpl(UserRoleRepository):
 
         existing = result.first()
         if existing:
-            existing.role_ids = sorted(role_ids)
-            existing.version += 1
+            next_role_ids = sorted(role_ids)
+            if existing.role_ids != next_role_ids:
+                existing.role_ids = next_role_ids
+                existing.version += 1
 
-            self._session.add(existing)
-            await self._session.flush()
+                self._session.add(existing)
+                await self._session.flush()
 
             entity = self._mapper.to_entity(existing)
             if entity.id is None:

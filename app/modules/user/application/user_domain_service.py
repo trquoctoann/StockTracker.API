@@ -114,7 +114,6 @@ class UserDomainService(CRUDService[UserEntity]):
                     }
                 ),
             )
-            updating.version += 1
 
             saved = await self._user_repository.bulk_update([updating])
             saved_entity = saved[0]
@@ -174,7 +173,6 @@ class UserDomainService(CRUDService[UserEntity]):
 
             existing.first_name = first_name
             existing.last_name = last_name
-            existing.version += 1
 
             await self._identity_provider.update_profile(
                 IdentityUpdateProfilePayload(
@@ -200,8 +198,10 @@ class UserDomainService(CRUDService[UserEntity]):
 
             existing = await self._query_service.get_by_id(user_id)
             await self._identity_provider.delete_user(str(existing.id))
-            existing.record_status = RecordStatus.DELETED
-            existing.version += 1
+
+            if existing.record_status != RecordStatus.DELETED:
+                existing.record_status = RecordStatus.DELETED
+                existing.version += 1
             await self._user_repository.bulk_update([existing])
 
             logger.debug("USER_DELETED", id=user_id)
