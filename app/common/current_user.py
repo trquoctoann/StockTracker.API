@@ -9,10 +9,10 @@ from fastapi import Depends, Request
 from app.common.auth.auth_access import get_authenticated_principal
 from app.exception.exception import UnauthorizedException
 from app.modules.role.application.role_query_service import RoleFetchSpec, RoleQueryService
-from app.modules.role.role_dependency import RoleQueryServiceDep
+from app.modules.role.role_query_dependency import RoleQueryServiceDep
 from app.modules.user.application.user_query_service import UserFetchSpec, UserQueryService
 from app.modules.user.domain.user_entity import UserEntity
-from app.modules.user.user_dependency import UserQueryServiceDep
+from app.modules.user.user_query_dependency import UserQueryServiceDep
 
 _current_user_id_ctx: ContextVar[str | None] = ContextVar("current_user_id", default=None)
 

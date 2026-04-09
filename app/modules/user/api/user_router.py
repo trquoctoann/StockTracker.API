@@ -13,9 +13,10 @@ from app.modules.user.api.dto.user_response import ResponseUser
 from app.modules.user.application.command.user_command import SetUserRolesCommand, UpdateUserCommand
 from app.modules.user.application.query.user_query import UserFilterParameter, UserPaginationParameter
 from app.modules.user.application.user_query_service import UserFetchSpec
-from app.modules.user.user_dependency import UserDomainServiceDep, UserQueryServiceDep
+from app.modules.user.user_dependency import UserDomainServiceDep
+from app.modules.user.user_query_dependency import UserQueryServiceDep
 
-logger = get_logger(__name__)
+_LOG = get_logger(__name__)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -36,7 +37,7 @@ async def create_user(
     body: Annotated[UserCreateRequest, Body()],
     domain_service: UserDomainServiceDep,
 ) -> ResponseUser:
-    logger.info("API_REQUEST_USER_CREATE", command=body)
+    _LOG.info("API_REQUEST_USER_CREATE", command=body)
     entity = await domain_service.create(body)
     return SchemaMapper.entity_to_response(entity, ResponseUser)
 
@@ -48,7 +49,7 @@ async def update_user(
     body: Annotated[UserUpdateRequest, Body()],
     domain_service: UserDomainServiceDep,
 ) -> ResponseUser:
-    logger.info("API_REQUEST_USER_UPDATE", command=body)
+    _LOG.info("API_REQUEST_USER_UPDATE", command=body)
     entity = await domain_service.update(UpdateUserCommand(id=user_id, **body.model_dump()))
     return SchemaMapper.entity_to_response(entity, ResponseUser)
 
@@ -59,7 +60,7 @@ async def delete_user(
     user_id: Annotated[UUID, Path()],
     domain_service: UserDomainServiceDep,
 ) -> None:
-    logger.info("API_REQUEST_USER_DELETE", id=user_id)
+    _LOG.info("API_REQUEST_USER_DELETE", id=user_id)
     await domain_service.delete(user_id)
 
 
@@ -70,7 +71,7 @@ async def get_page_users(
     pagination: Annotated[UserPaginationParameter, Depends(PaginationQueryParamDep)],
     query_service: UserQueryServiceDep,
 ) -> PaginatedResponse[ResponseUser]:
-    logger.info(
+    _LOG.info(
         "API_REQUEST_USER_PAGE",
         offset=pagination.offset,
         limit=pagination.limit,
@@ -91,7 +92,7 @@ async def get_all_users(
     filter_params: Annotated[UserFilterParameter, Depends(FilterQueryParamDep)],
     query_service: UserQueryServiceDep,
 ) -> list[ResponseUser]:
-    logger.info("API_REQUEST_USER_LIST_ALL", filter_params=filter_params)
+    _LOG.info("API_REQUEST_USER_LIST_ALL", filter_params=filter_params)
     users = await query_service.find_all(filter_params)
     return [SchemaMapper.entity_to_response(u, ResponseUser) for u in users]
 
@@ -102,7 +103,7 @@ async def get_user(
     user_id: Annotated[UUID, Path()],
     query_service: UserQueryServiceDep,
 ) -> ResponseUser:
-    logger.info("API_REQUEST_USER_GET", id=user_id)
+    _LOG.info("API_REQUEST_USER_GET", id=user_id)
     entity = await query_service.get_by_id(user_id, fetch_spec=UserFetchSpec(user_roles=True))
     return SchemaMapper.entity_to_response(entity, ResponseUser)
 
@@ -114,6 +115,6 @@ async def set_user_roles(
     body: Annotated[UserSetRolesRequest, Body()],
     domain_service: UserDomainServiceDep,
 ) -> ResponseUser:
-    logger.info("API_REQUEST_USER_SET_ROLES", id=user_id, command=body)
+    _LOG.info("API_REQUEST_USER_SET_ROLES", id=user_id, command=body)
     entity = await domain_service.set_roles(SetUserRolesCommand(id=user_id, **body.model_dump(exclude={"id"})))
     return SchemaMapper.entity_to_response(entity, ResponseUser)

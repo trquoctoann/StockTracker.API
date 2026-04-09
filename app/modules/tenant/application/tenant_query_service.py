@@ -95,6 +95,17 @@ class TenantQueryService(QueryService[TenantEntity, TenantFetchSpec]):
     async def exists(self, filter_params: TenantFilterParameter) -> bool:
         return await self._tenant_repository.exists(filter_param=filter_params)
 
+    async def find_all_by_ids(self, ids: list[int], *, fetch_spec: TenantFetchSpec | None = None) -> list[TenantEntity]:
+        entities = await self._tenant_repository.find_all(
+            filter_param=TenantFilterParameter(
+                in_={TenantFilterField.id: list[int](set[int](ids))},  # pyright: ignore[reportCallIssue]
+                neq={TenantFilterField.record_status: RecordStatus.DELETED},
+            ),
+        )
+        if fetch_spec:
+            entities = await self._enrich_entities(entities, fetch_spec)
+        return entities
+
     async def _enrich_entities(self, entities: list[TenantEntity], fetch_spec: TenantFetchSpec) -> list[TenantEntity]:
         if not entities:
             return entities
@@ -125,12 +136,4 @@ class TenantQueryService(QueryService[TenantEntity, TenantFetchSpec]):
                 if entity.id is not None:
                     entity.children_tenants = children_map.get(entity.id, [])
 
-        return entities
-
-    async def find_all_by_ids(self, ids: list[int], *, fetch_spec: TenantFetchSpec | None = None) -> list[TenantEntity]:
-        entities = await self._tenant_repository.find_all(
-            filter_param=TenantFilterParameter(in_={TenantFilterField.id: list[int](set[int](ids))})  # pyright: ignore[reportCallIssue]
-        )
-        if fetch_spec:
-            entities = await self._enrich_entities(entities, fetch_spec)
         return entities

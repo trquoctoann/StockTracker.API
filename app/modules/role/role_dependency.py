@@ -8,27 +8,12 @@ from app.modules.permission.permission_dependency import PermissionQueryServiceD
 from app.modules.role.application.role_domain_service import RoleDomainService
 from app.modules.role.application.role_query_service import RoleQueryService
 from app.modules.role.domain.role_repository import RoleRepository
-from app.modules.role.infrastructure.persistence.role_repository_impl import (
-    RolePermissionRepository,
-    RolePermissionRepositoryImpl,
-    RoleRepositoryImpl,
+from app.modules.role.infrastructure.persistence.role_repository_impl import RolePermissionRepository
+from app.modules.role.role_query_dependency import (
+    get_role_permission_repository,
+    get_role_query_service,
+    get_role_repository,
 )
-
-
-def get_role_repository(session: Annotated[AsyncSession, Depends(get_session)]) -> RoleRepository:
-    return RoleRepositoryImpl(session)
-
-
-def get_role_permission_repository(session: Annotated[AsyncSession, Depends(get_session)]) -> RolePermissionRepository:
-    return RolePermissionRepositoryImpl(session)
-
-
-def get_role_query_service(
-    role_repository: Annotated[RoleRepository, Depends(get_role_repository)],
-    role_permission_repository: Annotated[RolePermissionRepository, Depends(get_role_permission_repository)],
-    permission_query_service: PermissionQueryServiceDep,
-) -> RoleQueryService:
-    return RoleQueryService(role_repository, role_permission_repository, permission_query_service)
 
 
 def get_role_domain_service(
@@ -47,5 +32,4 @@ def get_role_domain_service(
     )
 
 
-RoleQueryServiceDep = Annotated[RoleQueryService, Depends(get_role_query_service)]
 RoleDomainServiceDep = Annotated[RoleDomainService, Depends(get_role_domain_service)]

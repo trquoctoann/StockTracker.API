@@ -12,9 +12,10 @@ from app.modules.role.api.dto.role_response import ResponseRole
 from app.modules.role.application.command.role_command import SetRolePermissionsCommand, UpdateRoleCommand
 from app.modules.role.application.query.role_query import RoleFilterParameter, RolePaginationParameter
 from app.modules.role.application.role_query_service import RoleFetchSpec
-from app.modules.role.role_dependency import RoleDomainServiceDep, RoleQueryServiceDep
+from app.modules.role.role_dependency import RoleDomainServiceDep
+from app.modules.role.role_query_dependency import RoleQueryServiceDep
 
-logger = get_logger(__name__)
+_LOG = get_logger(__name__)
 
 router = APIRouter(prefix="/roles", tags=["roles"])
 
@@ -35,7 +36,7 @@ async def create_role(
     body: Annotated[RoleCreateRequest, Body()],
     domain_service: RoleDomainServiceDep,
 ) -> ResponseRole:
-    logger.info("API_REQUEST_ROLE_CREATE", command=body)
+    _LOG.info("API_REQUEST_ROLE_CREATE", command=body)
     entity = await domain_service.create(body)
     return SchemaMapper.entity_to_response(entity, ResponseRole)
 
@@ -47,7 +48,7 @@ async def update_role(
     body: Annotated[RoleUpdateRequest, Body()],
     domain_service: RoleDomainServiceDep,
 ) -> ResponseRole:
-    logger.info("API_REQUEST_ROLE_UPDATE", role_id=role_id, command=body)
+    _LOG.info("API_REQUEST_ROLE_UPDATE", role_id=role_id, command=body)
     entity = await domain_service.update(UpdateRoleCommand(id=role_id, **body.model_dump()))
     return SchemaMapper.entity_to_response(entity, ResponseRole)
 
@@ -58,7 +59,7 @@ async def delete_role(
     role_id: Annotated[int, Path()],
     domain_service: RoleDomainServiceDep,
 ) -> None:
-    logger.info("API_REQUEST_ROLE_DELETE", role_id=role_id)
+    _LOG.info("API_REQUEST_ROLE_DELETE", role_id=role_id)
     await domain_service.delete(role_id)
 
 
@@ -69,7 +70,7 @@ async def get_page_roles(
     pagination: Annotated[RolePaginationParameter, Depends(PaginationQueryParamDep)],
     query_service: RoleQueryServiceDep,
 ) -> PaginatedResponse[ResponseRole]:
-    logger.info("API_REQUEST_ROLE_PAGE", offset=pagination.offset, limit=pagination.limit)
+    _LOG.info("API_REQUEST_ROLE_PAGE", offset=pagination.offset, limit=pagination.limit)
     page = await query_service.find_page(filter_params, pagination, fetch_spec=RoleFetchSpec(permissions=True))
     return PaginatedResponse(
         items=[SchemaMapper.entity_to_response(r, ResponseRole) for r in page.items],
@@ -86,7 +87,7 @@ async def get_all_roles(
     filter_params: Annotated[RoleFilterParameter, Depends(FilterQueryParamDep)],
     query_service: RoleQueryServiceDep,
 ) -> list[ResponseRole]:
-    logger.info("API_REQUEST_ROLE_LIST_ALL", filter_params=filter_params)
+    _LOG.info("API_REQUEST_ROLE_LIST_ALL", filter_params=filter_params)
     roles = await query_service.find_all(filter_params)
     return [SchemaMapper.entity_to_response(r, ResponseRole) for r in roles]
 
@@ -97,7 +98,7 @@ async def get_role(
     role_id: Annotated[int, Path()],
     query_service: RoleQueryServiceDep,
 ) -> ResponseRole:
-    logger.info("API_REQUEST_ROLE_GET", role_id=role_id)
+    _LOG.info("API_REQUEST_ROLE_GET", role_id=role_id)
     entity = await query_service.get_by_id(role_id, fetch_spec=RoleFetchSpec(permissions=True))
     return SchemaMapper.entity_to_response(entity, ResponseRole)
 
@@ -109,6 +110,6 @@ async def set_role_permissions(
     body: Annotated[RoleSetPermissionsRequest, Body()],
     domain_service: RoleDomainServiceDep,
 ) -> ResponseRole:
-    logger.info("API_REQUEST_ROLE_SET_PERMISSIONS", role_id=role_id, command=body)
+    _LOG.info("API_REQUEST_ROLE_SET_PERMISSIONS", role_id=role_id, command=body)
     entity = await domain_service.set_permissions(SetRolePermissionsCommand(id=role_id, **body.model_dump()))
     return SchemaMapper.entity_to_response(entity, ResponseRole)

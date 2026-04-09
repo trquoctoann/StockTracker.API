@@ -95,6 +95,17 @@ class RoleQueryService(QueryService[RoleEntity, RoleFetchSpec]):
     async def exists(self, filter_params: RoleFilterParameter) -> bool:
         return await self._role_repository.exists(filter_param=filter_params)
 
+    async def find_all_by_ids(self, ids: list[int], *, fetch_spec: RoleFetchSpec | None = None) -> list[RoleEntity]:
+        entities = await self._role_repository.find_all(
+            filter_param=RoleFilterParameter(
+                in_={RoleFilterField.id: list[int](set[int](ids))},  # pyright: ignore[reportCallIssue]
+                neq={RoleFilterField.record_status: RecordStatus.DELETED},
+            ),
+        )
+        if fetch_spec:
+            entities = await self._enrich_entities(entities, fetch_spec)
+        return entities
+
     async def _enrich_entities(self, entities: list[RoleEntity], fetch_spec: RoleFetchSpec) -> list[RoleEntity]:
         if not entities:
             return entities
@@ -124,12 +135,4 @@ class RoleQueryService(QueryService[RoleEntity, RoleFetchSpec]):
                 role.permissions = [
                     permission_map[pid] for pid in role_permission_ids_for_role if pid in permission_map
                 ]
-        return entities
-
-    async def find_all_by_ids(self, ids: list[int], *, fetch_spec: RoleFetchSpec | None = None) -> list[RoleEntity]:
-        entities = await self._role_repository.find_all(
-            filter_param=RoleFilterParameter(in_={RoleFilterField.id: list[int](set[int](ids))})  # pyright: ignore[reportCallIssue]
-        )
-        if fetch_spec:
-            entities = await self._enrich_entities(entities, fetch_spec)
         return entities

@@ -5,8 +5,9 @@ from fastapi import Depends
 from app.common.auth.context_token_codec import ContextTokenCodecDep
 from app.modules.account.application.account_domain_service import AccountDomainService
 from app.modules.account.application.account_query_service import AccountQueryService
-from app.modules.role.role_dependency import RoleQueryServiceDep
-from app.modules.user.user_dependency import UserDomainServiceDep, UserQueryServiceDep
+from app.modules.role.role_query_dependency import RoleQueryServiceDep
+from app.modules.user.user_dependency import UserDomainServiceDep
+from app.modules.user.user_query_dependency import UserQueryServiceDep
 
 
 def get_account_query_service() -> AccountQueryService:

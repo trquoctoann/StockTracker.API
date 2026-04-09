@@ -15,7 +15,7 @@ from app.modules.account.api.dto.account_request import (
 from app.modules.account.api.dto.account_response import AccountSwitchContextResponse
 from app.modules.user.api.dto.user_response import ResponseUser
 
-logger = get_logger(__name__)
+_LOG = get_logger(__name__)
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 
@@ -27,7 +27,7 @@ async def get_my_profile(
     query_service: AccountQueryServiceDep,
 ) -> ResponseUser:
     current_user = await current_user_service.get_current_user()
-    logger.info("API_REQUEST_ACCOUNT_GET", user_id=current_user.id)
+    _LOG.info("API_REQUEST_ACCOUNT_GET", user_id=current_user.id)
     me = await query_service.get_me(current_user)
     return SchemaMapper.entity_to_response(me, ResponseUser)
 
@@ -40,7 +40,7 @@ async def update_my_profile(
     domain_service: AccountDomainServiceDep,
 ) -> ResponseUser:
     current_user = await current_user_service.get_current_user()
-    logger.info("API_REQUEST_ACCOUNT_UPDATE_PROFILE", user_id=current_user.id)
+    _LOG.info("API_REQUEST_ACCOUNT_UPDATE_PROFILE", user_id=current_user.id)
     updated = await domain_service.update_profile(current_user, first_name=body.first_name, last_name=body.last_name)
     return SchemaMapper.entity_to_response(updated, ResponseUser)
 
@@ -53,7 +53,7 @@ async def update_my_password(
     domain_service: AccountDomainServiceDep,
 ) -> None:
     current_user = await current_user_service.get_current_user()
-    logger.info("API_REQUEST_ACCOUNT_UPDATE_PASSWORD", user_id=current_user.id)
+    _LOG.info("API_REQUEST_ACCOUNT_UPDATE_PASSWORD", user_id=current_user.id)
     await domain_service.update_password(current_user, new_password=body.new_password)
 
 
@@ -65,7 +65,7 @@ async def switch_context(
     domain_service: AccountDomainServiceDep,
 ) -> AccountSwitchContextResponse:
     current_user = await current_user_service.get_current_user()
-    logger.info(
+    _LOG.info(
         "API_REQUEST_ACCOUNT_SWITCH_CONTEXT",
         user_id=current_user.id,
         scope=body.scope.value,
