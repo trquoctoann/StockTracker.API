@@ -1,3 +1,11 @@
+"""add Role Permission RolePermission
+
+Revision ID: 20260326162000
+Revises:
+Create Date: 2026-03-26 16:20:00.000000
+
+"""
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -43,7 +51,7 @@ def upgrade() -> None:
         sa.Column("scope", rolescope, nullable=False),
         sa.Column("code", sa.String(length=255), nullable=False),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("code"),
+        sa.UniqueConstraint("scope", "code", name="uix_permission_scope_code"),
     )
 
     op.create_table(
@@ -54,9 +62,9 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["role_id"], ["role.id"]),
         sa.ForeignKeyConstraint(["permission_id"], ["permission.id"]),
         sa.PrimaryKeyConstraint("id"),
-        sa.Index("ix_role_permission_role_id", "role_id"),
-        sa.Index("ix_role_permission_permission_id", "permission_id"),
     )
+    op.create_index("ix_role_permission_permission_id", "role_permission", ["permission_id"], unique=False)
+    op.create_index("ix_role_permission_role_id", "role_permission", ["role_id"], unique=False)
 
 
 def downgrade() -> None:
@@ -66,6 +74,7 @@ def downgrade() -> None:
     op.drop_table("permission")
     op.drop_table("role")
 
-    op.execute(sa.text("DROP TYPE IF EXISTS recordstatus"))
-    op.execute(sa.text("DROP TYPE IF EXISTS roletype"))
-    op.execute(sa.text("DROP TYPE IF EXISTS rolescope"))
+    bind = op.get_bind()
+    postgresql.ENUM(name="recordstatus").drop(bind, checkfirst=True)
+    postgresql.ENUM(name="rolescope").drop(bind, checkfirst=True)
+    postgresql.ENUM(name="roletype").drop(bind, checkfirst=True)

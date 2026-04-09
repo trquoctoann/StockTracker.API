@@ -1,6 +1,6 @@
 from typing import ClassVar
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Index, SQLModel
 
 from app.common.base_model import BaseSQLModelWithID
 from app.common.enum import RecordStatus, RoleScope, RoleType
@@ -22,5 +22,10 @@ class RolePermissionModel(SQLModel, table=True):
     __tablename__: ClassVar[str] = "role_permission"
 
     id: int | None = Field(default=None, primary_key=True)
-    role_id: int = Field(nullable=False, foreign_key="role.id", index=True)
-    permission_id: int = Field(nullable=False, foreign_key="permission.id", index=True)
+    role_id: int = Field(nullable=False, foreign_key="role.id")
+    permission_id: int = Field(nullable=False, foreign_key="permission.id")
+
+    __table_args__ = (
+        Index("ix_role_permission_role_id", "role_id"),
+        Index("ix_role_permission_permission_id", "permission_id"),
+    )

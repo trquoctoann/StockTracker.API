@@ -1,3 +1,11 @@
+"""add User Tenant UserRole
+
+Revision ID: 20260326163000
+Revises: 20260326162000
+Create Date: 2026-03-26 16:30:00.000000
+
+"""
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -51,27 +59,35 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.Column("updated_by", sa.String(length=255), nullable=False),
         sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("username", name="uix_user_username"),
+        sa.UniqueConstraint("email", name="uix_user_email"),
     )
-    op.create_index(op.f("ix_user_username"), "user", ["username"], unique=True)
-    op.create_index(op.f("ix_user_email"), "user", ["email"], unique=True)
-
     op.create_table(
         "user_role",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("scope", rolescope, nullable=False),
         sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("tenant_id", sa.Integer(), nullable=True),
-        sa.Column("role_ids", sa.JSON(), nullable=False),
+        sa.Column("role_ids", postgresql.ARRAY(sa.Integer()), nullable=False),
         sa.Column("version", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(["tenant_id"], ["tenant.id"]),
         sa.ForeignKeyConstraint(["user_id"], ["user.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
+    op.create_index(
+        "ix_user_role_role_ids",
+        "user_role",
+        ["role_ids"],
+        unique=False,
+        postgresql_using="gin",
+    )
 
 
 def downgrade() -> None:
+    op.drop_index("ix_user_role_role_ids", table_name="user_role")
     op.drop_table("user_role")
-    op.drop_index(op.f("ix_user_email"), table_name="user")
-    op.drop_index(op.f("ix_user_username"), table_name="user")
     op.drop_table("user")
     op.drop_table("tenant")
+
+    bind = op.get_bind()
+    postgresql.ENUM(name="userstatus").drop(bind, checkfirst=True)
