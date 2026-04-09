@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.common.cache import CacheServiceDep
 from app.core.config import settings
 from app.core.database import get_session
 from app.modules.role.role_query_dependency import RoleQueryServiceDep
@@ -35,6 +36,7 @@ def get_user_domain_service(
     tenant_query_service: TenantQueryServiceDep,
     role_query_service: RoleQueryServiceDep,
     identity_provider: Annotated[IdentityProvider, Depends(get_identity_provider)],
+    cache: CacheServiceDep,
 ) -> UserDomainService:
     return UserDomainService(
         session,
@@ -44,6 +46,7 @@ def get_user_domain_service(
         tenant_query_service,
         role_query_service,
         identity_provider,
+        cache,
     )
 
 

@@ -6,6 +6,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.common.base_mapper import SchemaMapper
 from app.common.base_service import CRUDService
+from app.common.cache import CacheService
+from app.common.cache_version_keys import get_role_version_cache_key
 from app.common.enum import RecordStatus, RoleType
 from app.core.logger import get_logger
 from app.core.transaction_manager import TransactionManager
@@ -21,8 +23,9 @@ from app.modules.role.application.role_query_service import RoleFetchSpec, RoleQ
 from app.modules.role.domain.role_entity import RoleEntity
 from app.modules.role.domain.role_repository import RoleRepository
 from app.modules.role.infrastructure.persistence.role_repository_impl import RolePermissionRepository
+from app.modules.user.application.user_domain_service import UserDomainService
 
-logger = get_logger(__name__)
+_LOG = get_logger(__name__)
 
 
 class RoleDomainService(CRUDService[RoleEntity]):
@@ -33,16 +36,20 @@ class RoleDomainService(CRUDService[RoleEntity]):
         role_permission_repository: RolePermissionRepository,
         query_service: RoleQueryService,
         permission_query_service: PermissionQueryService,
+        user_domain_service: UserDomainService,
+        cache: CacheService,
     ) -> None:
         self._session = session
         self._role_repository = role_repository
         self._role_permission_repository = role_permission_repository
         self._query_service = query_service
         self._permission_query_service = permission_query_service
+        self._user_domain_service = user_domain_service
+        self._cache = cache
 
     async def create(self, command: CreateRoleCommand) -> RoleEntity:
         async with TransactionManager(self._session):
-            logger.debug("ROLE_CREATING", command=command)
+            _LOG.debug("ROLE_CREATING", command=command)
 
             entity = SchemaMapper.command_to_entity(
                 command,
@@ -64,7 +71,7 @@ class RoleDomainService(CRUDService[RoleEntity]):
 
     async def update(self, command: UpdateRoleCommand) -> RoleEntity:
         async with TransactionManager(self._session):
-            logger.debug("ROLE_UPDATING", command=command)
+            _LOG.debug("ROLE_UPDATING", command=command)
 
             existing = await self._query_service.get_by_id(command.id, fetch_spec=RoleFetchSpec(permissions=True))
             updating = SchemaMapper.merge_source_into_target(
@@ -93,6 +100,7 @@ class RoleDomainService(CRUDService[RoleEntity]):
                 permissions_changed = current_permission_ids != command.permission_ids
             if permissions_changed:
                 updating.version += 1
+                await self._invalidate_role_version_cache(updating.id)
 
             saved = await self._role_repository.bulk_update([updating])
             saved_role = saved[0]
@@ -104,18 +112,21 @@ class RoleDomainService(CRUDService[RoleEntity]):
 
     async def delete(self, id: int) -> None:
         async with TransactionManager(self._session):
-            logger.debug("ROLE_DELETING", id=id)
+            _LOG.debug("ROLE_DELETING", id=id)
 
             existing = await self._query_service.get_by_id(id)
             existing.record_status = RecordStatus.DELETED
             existing.version += 1
             await self._role_repository.bulk_update([existing])
 
-            logger.debug("ROLE_DELETED", id=id)
+            await self._invalidate_role_version_cache(id)
+            await self._user_domain_service.remove_soft_deleted_role_from_user_assignments(id)
+
+            _LOG.debug("ROLE_DELETED", id=id)
 
     async def set_permissions(self, command: SetRolePermissionsCommand) -> RoleEntity:
         async with TransactionManager(self._session):
-            logger.debug("ROLE_SET_PERMISSIONS", command=command)
+            _LOG.debug("ROLE_SET_PERMISSIONS", command=command)
 
             existing = await self._query_service.get_by_id(command.id, fetch_spec=RoleFetchSpec(permissions=True))
             current_permission_ids = {
@@ -125,6 +136,7 @@ class RoleDomainService(CRUDService[RoleEntity]):
             if permissions_changed:
                 existing.version += 1
                 await self._role_repository.bulk_update([existing])
+                await self._invalidate_role_version_cache(command.id)
 
             if permissions_changed:
                 return await self._set_role_permissions(
@@ -164,3 +176,6 @@ class RoleDomainService(CRUDService[RoleEntity]):
         if return_enriched:
             return await self._query_service.get_by_id(role_id_int, fetch_spec=RoleFetchSpec(permissions=True))
         return await self._query_service.get_by_id(role_id_int)
+
+    async def _invalidate_role_version_cache(self, role_id: int) -> None:
+        await self._cache.delete(get_role_version_cache_key(role_id))

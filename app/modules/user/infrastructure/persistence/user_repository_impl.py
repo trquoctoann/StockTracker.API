@@ -1,10 +1,10 @@
 import uuid
 from collections import defaultdict
 from collections.abc import Callable, Sequence
-from typing import TypeVar, cast
+from typing import TypeVar
 
-from sqlalchemy import ColumnElement, delete
-from sqlmodel import select
+from sqlalchemy import delete
+from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.common.base_repository import SQLExecutor
@@ -87,29 +87,27 @@ class UserRoleRepositoryImpl(UserRoleRepository):
     async def find_all_by_user_ids(self, user_ids: list[uuid.UUID]) -> list[UserRoleEntity]:
         if not user_ids:
             return []
-        result = await self._session.exec(
-            select(UserRoleModel).where(cast(ColumnElement[uuid.UUID], UserRoleModel.user_id).in_(user_ids))  # type: ignore[arg-type]
-        )
+        result = await self._session.exec(select(UserRoleModel).where(col(UserRoleModel.user_id).in_(user_ids)))
         return self._mapper.to_entity_list(list[UserRoleModel](result.all()))
 
     async def delete_by_user_id(self, *, user_id: uuid.UUID, scope: RoleScope, tenant_id: int | None) -> None:
-        statement = delete(UserRoleModel).where(cast(ColumnElement[uuid.UUID], UserRoleModel.user_id) == user_id)
-        statement = statement.where(cast(ColumnElement[RoleScope], UserRoleModel.scope) == scope)
+        statement = delete(UserRoleModel).where(col(UserRoleModel.user_id) == user_id)
+        statement = statement.where(col(UserRoleModel.scope) == scope)
         if tenant_id is None:
-            statement = statement.where(cast(ColumnElement[int], UserRoleModel.tenant_id).is_(None))
+            statement = statement.where(col(UserRoleModel.tenant_id).is_(None))
         else:
-            statement = statement.where(cast(ColumnElement[int], UserRoleModel.tenant_id) == tenant_id)
+            statement = statement.where(col(UserRoleModel.tenant_id) == tenant_id)
         await self._session.exec(statement)
 
     async def upsert_user_roles(
         self, *, user_id: uuid.UUID, scope: RoleScope, tenant_id: int | None, role_ids: set[int]
     ) -> UserRoleEntity:
-        statement = select(UserRoleModel).where(cast(ColumnElement[uuid.UUID], UserRoleModel.user_id) == user_id)
-        statement = statement.where(cast(ColumnElement[RoleScope], UserRoleModel.scope) == scope)
+        statement = select(UserRoleModel).where(col(UserRoleModel.user_id) == user_id)
+        statement = statement.where(col(UserRoleModel.scope) == scope)
         if tenant_id is None:
-            statement = statement.where(cast(ColumnElement[int], UserRoleModel.tenant_id).is_(None))
+            statement = statement.where(col(UserRoleModel.tenant_id).is_(None))
         else:
-            statement = statement.where(cast(ColumnElement[int], UserRoleModel.tenant_id) == tenant_id)
+            statement = statement.where(col(UserRoleModel.tenant_id) == tenant_id)
         result = await self._session.exec(statement)
 
         existing = result.first()
@@ -141,3 +139,33 @@ class UserRoleRepositoryImpl(UserRoleRepository):
         if entity.id is None:
             raise InternalException(developer_message="UserRole ID must be generated after creating")
         return entity
+
+    async def delete_all_by_tenant_id(self, tenant_id: int) -> list[tuple[uuid.UUID, RoleScope, int | None]]:
+        result = await self._session.exec(select(UserRoleModel).where(col(UserRoleModel.tenant_id) == tenant_id))
+        models = list[UserRoleModel](result.all())
+        keys = [(m.user_id, m.scope, m.tenant_id) for m in models]
+
+        statement = delete(UserRoleModel).where(col(UserRoleModel.tenant_id) == tenant_id)
+        await self._session.exec(statement)
+        return keys
+
+    async def remove_role_id_from_all_assignments(self, role_id: int) -> list[tuple[uuid.UUID, RoleScope, int | None]]:
+        result = await self._session.exec(select(UserRoleModel).where(col(UserRoleModel.role_ids).contains([role_id])))
+        models = list[UserRoleModel](result.all())
+
+        keys: list[tuple[uuid.UUID, RoleScope, int | None]] = []
+        for m in models:
+            if role_id not in m.role_ids:
+                continue
+            next_role_ids = sorted({x for x in m.role_ids if x != role_id})
+            if next_role_ids == sorted(m.role_ids):
+                continue
+            m.role_ids = next_role_ids
+            m.version += 1
+
+            self._session.add(m)
+
+            keys.append((m.user_id, m.scope, m.tenant_id))
+        if keys:
+            await self._session.flush()
+        return keys

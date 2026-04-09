@@ -1,9 +1,9 @@
 from collections import defaultdict
 from collections.abc import Callable, Sequence
-from typing import TypeVar, cast
+from typing import TypeVar
 
-from sqlalchemy import ColumnElement, delete
-from sqlmodel import select
+from sqlalchemy import delete
+from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.common.base_repository import SQLExecutor
@@ -80,9 +80,7 @@ class RolePermissionRepositoryImpl(RolePermissionRepository):
         self._mapper = mapper or RolePermissionMapper()
 
     async def delete_by_role_id(self, role_id: int) -> None:
-        await self._session.exec(
-            delete(RolePermissionModel).where(cast(ColumnElement[int], RolePermissionModel.role_id) == role_id)
-        )
+        await self._session.exec(delete(RolePermissionModel).where(col(RolePermissionModel.role_id) == role_id))
 
     async def create_many_for_role(self, *, role_id: int, permission_ids: set[int]) -> None:
         if not permission_ids:
@@ -96,8 +94,6 @@ class RolePermissionRepositoryImpl(RolePermissionRepository):
             return []
 
         result = await self._session.exec(
-            select(RolePermissionModel).where(
-                cast(ColumnElement[int], RolePermissionModel.role_id).in_(role_ids)  # type: ignore[arg-type]
-            )
+            select(RolePermissionModel).where(col(RolePermissionModel.role_id).in_(role_ids))
         )
         return self._mapper.to_entity_list(list[RolePermissionModel](result.all()))

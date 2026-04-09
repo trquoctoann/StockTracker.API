@@ -8,6 +8,12 @@ from uuid import UUID
 
 from app.common.base_schema import PaginatedResponse
 from app.common.base_service import QueryService
+from app.common.cache import CacheService
+from app.common.cache_version_keys import (
+    get_user_cache_key,
+    get_user_role_version_cache_key,
+    get_user_version_cache_key,
+)
 from app.common.enum import RecordStatus
 from app.exception.exception import NotFoundException
 from app.modules.role.application.role_query_service import RoleQueryService
@@ -31,22 +37,34 @@ class UserQueryService(QueryService[UserEntity, UserFetchSpec]):
         user_role_repository: UserRoleRepository,
         tenant_query_service: TenantQueryService,
         role_query_service: RoleQueryService,
+        cache: CacheService,
     ) -> None:
         self._user_repository = user_repository
         self._user_role_repository = user_role_repository
         self._tenant_query_service = tenant_query_service
         self._role_query_service = role_query_service
+        self._cache = cache
 
     async def find_by_id(self, id: uuid.UUID | int, *, fetch_spec: UserFetchSpec | None = None) -> UserEntity | None:
-        entities = await self._user_repository.find_all(
-            filter_param=UserFilterParameter(
-                eq={UserFilterField.id: id},
-                neq={UserFilterField.record_status: RecordStatus.DELETED},
-            ),
-        )
-        if fetch_spec:
-            entities = await self._enrich_entities(entities, fetch_spec)
-        return entities[0] if entities else None
+        cache_key = get_user_cache_key(str(id))
+        entity = await self._cache.get_model(cache_key, UserEntity)
+
+        if entity is None:
+            entities = await self._user_repository.find_all(
+                filter_param=UserFilterParameter(
+                    eq={UserFilterField.id: id}, neq={UserFilterField.record_status: RecordStatus.DELETED}
+                ),
+            )
+            entity = entities[0] if entities else None
+            if entity is not None:
+                await self._cache.set_model(cache_key, entity)
+                await self._cache.set_int(get_user_version_cache_key(str(id)), entity.version)
+
+        if entity is not None and fetch_spec:
+            enriched = await self._enrich_entities([entity], fetch_spec)
+            entity = enriched[0] if enriched else entity
+
+        return entity
 
     async def get_by_id(self, id: uuid.UUID | int, *, fetch_spec: UserFetchSpec | None = None) -> UserEntity:
         entity = await self.find_by_id(id, fetch_spec=fetch_spec)
@@ -131,6 +149,14 @@ class UserQueryService(QueryService[UserEntity, UserFetchSpec]):
         if fetch_spec.user_roles:
             user_ids = [u.id for u in entities]
             user_roles = await self._user_role_repository.find_all_by_user_ids(user_ids)
+
+            version_mapping: dict[str, str] = {}
+            for ur in user_roles:
+                version_mapping[get_user_role_version_cache_key(ur.user_id, ur.scope.value, ur.tenant_id)] = str(
+                    ur.version
+                )
+            if version_mapping:
+                await self._cache.set_many(version_mapping)
 
             by_user: dict[uuid.UUID, list[UserRoleEntity]] = defaultdict[UUID, list[UserRoleEntity]](list)
             for user_role in user_roles:

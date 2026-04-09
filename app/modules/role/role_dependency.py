@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.common.cache import CacheServiceDep
 from app.core.database import get_session
 from app.modules.permission.permission_dependency import PermissionQueryServiceDep
 from app.modules.role.application.role_domain_service import RoleDomainService
@@ -14,6 +15,7 @@ from app.modules.role.role_query_dependency import (
     get_role_query_service,
     get_role_repository,
 )
+from app.modules.user.user_dependency import UserDomainServiceDep
 
 
 def get_role_domain_service(
@@ -22,6 +24,8 @@ def get_role_domain_service(
     role_permission_repository: Annotated[RolePermissionRepository, Depends(get_role_permission_repository)],
     query_service: Annotated[RoleQueryService, Depends(get_role_query_service)],
     permission_query_service: PermissionQueryServiceDep,
+    user_domain_service: UserDomainServiceDep,
+    cache: CacheServiceDep,
 ) -> RoleDomainService:
     return RoleDomainService(
         session,
@@ -29,6 +33,8 @@ def get_role_domain_service(
         role_permission_repository,
         query_service,
         permission_query_service,
+        user_domain_service,
+        cache,
     )
 
 

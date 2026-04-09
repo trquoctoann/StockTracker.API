@@ -17,6 +17,7 @@ dependencies = [
     "pydantic[email]>=2.12.5",
     "structlog>=24.4.0",
     "colorama>=0.4.6",
+    "redis>=5.0.0",
 ]
 
 [project.optional-dependencies]

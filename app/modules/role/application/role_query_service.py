@@ -7,6 +7,8 @@ from dataclasses import dataclass
 
 from app.common.base_schema import PaginatedResponse
 from app.common.base_service import QueryService
+from app.common.cache import CacheService
+from app.common.cache_version_keys import get_role_version_cache_key
 from app.common.enum import RecordStatus
 from app.exception.exception import NotFoundException
 from app.modules.permission.application.permission_query_service import PermissionQueryService
@@ -28,10 +30,12 @@ class RoleQueryService(QueryService[RoleEntity, RoleFetchSpec]):
         role_repository: RoleRepository,
         role_permission_repository: RolePermissionRepository,
         permission_query_service: PermissionQueryService,
+        cache: CacheService,
     ) -> None:
         self._role_repository = role_repository
         self._role_permission_repository = role_permission_repository
         self._permission_query_service = permission_query_service
+        self._cache = cache
 
     async def find_by_id(self, id: uuid.UUID | int, *, fetch_spec: RoleFetchSpec | None = None) -> RoleEntity | None:
         entities = await self._role_repository.find_all(
@@ -39,6 +43,10 @@ class RoleQueryService(QueryService[RoleEntity, RoleFetchSpec]):
                 eq={RoleFilterField.id: id}, neq={RoleFilterField.record_status: RecordStatus.DELETED}
             ),
         )
+        for entity in entities:
+            if entity.id is not None:
+                await self._cache.set_int(get_role_version_cache_key(entity.id), entity.version)
+
         if fetch_spec:
             entities = await self._enrich_entities(entities, fetch_spec)
         return entities[0] if entities else None
@@ -102,6 +110,11 @@ class RoleQueryService(QueryService[RoleEntity, RoleFetchSpec]):
                 neq={RoleFilterField.record_status: RecordStatus.DELETED},
             ),
         )
+
+        version_mapping = {get_role_version_cache_key(e.id): str(e.version) for e in entities if e.id is not None}
+        if version_mapping:
+            await self._cache.set_many(version_mapping)
+
         if fetch_spec:
             entities = await self._enrich_entities(entities, fetch_spec)
         return entities

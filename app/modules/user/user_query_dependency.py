@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.common.cache import CacheServiceDep
 from app.core.database import get_session
 from app.modules.role.role_query_dependency import RoleQueryServiceDep
 from app.modules.tenant.tenant_query_dependency import TenantQueryServiceDep
@@ -24,8 +25,9 @@ def get_user_query_service(
     user_role_repository: Annotated[UserRoleRepository, Depends(get_user_role_repository)],
     tenant_query_service: TenantQueryServiceDep,
     role_query_service: RoleQueryServiceDep,
+    cache: CacheServiceDep,
 ) -> UserQueryService:
-    return UserQueryService(user_repository, user_role_repository, tenant_query_service, role_query_service)
+    return UserQueryService(user_repository, user_role_repository, tenant_query_service, role_query_service, cache)
 
 
 UserQueryServiceDep = Annotated[UserQueryService, Depends(get_user_query_service)]

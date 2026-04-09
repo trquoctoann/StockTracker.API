@@ -11,14 +11,16 @@ from app.modules.tenant.tenant_query_dependency import (
     get_tenant_query_service,
     get_tenant_repository,
 )
+from app.modules.user.user_dependency import UserDomainServiceDep
 
 
 def get_tenant_domain_service(
     session: Annotated[AsyncSession, Depends(get_session)],
     tenant_repository: Annotated[TenantRepository, Depends(get_tenant_repository)],
     query_service: Annotated[TenantQueryService, Depends(get_tenant_query_service)],
+    user_domain_service: UserDomainServiceDep,
 ) -> TenantDomainService:
-    return TenantDomainService(session, tenant_repository, query_service)
+    return TenantDomainService(session, tenant_repository, query_service, user_domain_service)
 
 
 TenantDomainServiceDep = Annotated[TenantDomainService, Depends(get_tenant_domain_service)]

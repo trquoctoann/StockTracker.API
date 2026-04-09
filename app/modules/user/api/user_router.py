@@ -7,6 +7,7 @@ from app.common.auth.auth_access import require_context_permissions
 from app.common.auth.permission_codes import PermissionCode
 from app.common.base_mapper import SchemaMapper
 from app.common.base_schema import PaginatedResponse, build_query_param_dependency, get_model_fields
+from app.common.enum import RoleScope
 from app.core.logger import get_logger
 from app.modules.user.api.dto.user_request import UserCreateRequest, UserSetRolesRequest, UserUpdateRequest
 from app.modules.user.api.dto.user_response import ResponseUser
@@ -33,7 +34,10 @@ FilterQueryParamDep = build_query_param_dependency(
 
 @router.post("", response_model=ResponseUser, status_code=status.HTTP_201_CREATED)
 async def create_user(
-    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.USER_CREATE))],
+    _auth: Annotated[
+        object,
+        Depends(require_context_permissions(PermissionCode.USER_CREATE, allowed_scopes=frozenset({RoleScope.ADMIN}))),
+    ],
     body: Annotated[UserCreateRequest, Body()],
     domain_service: UserDomainServiceDep,
 ) -> ResponseUser:
@@ -44,7 +48,10 @@ async def create_user(
 
 @router.put("/{user_id}", response_model=ResponseUser, status_code=status.HTTP_200_OK)
 async def update_user(
-    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.USER_UPDATE))],
+    _auth: Annotated[
+        object,
+        Depends(require_context_permissions(PermissionCode.USER_UPDATE, allowed_scopes=frozenset({RoleScope.ADMIN}))),
+    ],
     user_id: Annotated[UUID, Path()],
     body: Annotated[UserUpdateRequest, Body()],
     domain_service: UserDomainServiceDep,
@@ -56,7 +63,10 @@ async def update_user(
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
-    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.USER_DELETE))],
+    _auth: Annotated[
+        object,
+        Depends(require_context_permissions(PermissionCode.USER_DELETE, allowed_scopes=frozenset({RoleScope.ADMIN}))),
+    ],
     user_id: Annotated[UUID, Path()],
     domain_service: UserDomainServiceDep,
 ) -> None:
@@ -66,7 +76,10 @@ async def delete_user(
 
 @router.get("", response_model=PaginatedResponse[ResponseUser])
 async def get_page_users(
-    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.USER_READ))],
+    _auth: Annotated[
+        object,
+        Depends(require_context_permissions(PermissionCode.USER_READ, allowed_scopes=frozenset({RoleScope.ADMIN}))),
+    ],
     filter_params: Annotated[UserFilterParameter, Depends(FilterQueryParamDep)],
     pagination: Annotated[UserPaginationParameter, Depends(PaginationQueryParamDep)],
     query_service: UserQueryServiceDep,
@@ -88,7 +101,10 @@ async def get_page_users(
 
 @router.get("/all", response_model=list[ResponseUser])
 async def get_all_users(
-    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.USER_READ))],
+    _auth: Annotated[
+        object,
+        Depends(require_context_permissions(PermissionCode.USER_READ, allowed_scopes=frozenset({RoleScope.ADMIN}))),
+    ],
     filter_params: Annotated[UserFilterParameter, Depends(FilterQueryParamDep)],
     query_service: UserQueryServiceDep,
 ) -> list[ResponseUser]:
@@ -99,7 +115,10 @@ async def get_all_users(
 
 @router.get("/{user_id}", response_model=ResponseUser)
 async def get_user(
-    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.USER_READ))],
+    _auth: Annotated[
+        object,
+        Depends(require_context_permissions(PermissionCode.USER_READ, allowed_scopes=frozenset({RoleScope.ADMIN}))),
+    ],
     user_id: Annotated[UUID, Path()],
     query_service: UserQueryServiceDep,
 ) -> ResponseUser:
@@ -110,7 +129,12 @@ async def get_user(
 
 @router.put("/{user_id}/roles", response_model=ResponseUser, status_code=status.HTTP_200_OK)
 async def set_user_roles(
-    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.USER_MANAGE_ROLES))],
+    _auth: Annotated[
+        object,
+        Depends(
+            require_context_permissions(PermissionCode.USER_MANAGE_ROLES, allowed_scopes=frozenset({RoleScope.ADMIN}))
+        ),
+    ],
     user_id: Annotated[UUID, Path()],
     body: Annotated[UserSetRolesRequest, Body()],
     domain_service: UserDomainServiceDep,

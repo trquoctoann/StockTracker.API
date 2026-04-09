@@ -6,6 +6,7 @@ from app.common.auth.auth_access import require_context_permissions
 from app.common.auth.permission_codes import PermissionCode
 from app.common.base_mapper import SchemaMapper
 from app.common.base_schema import PaginatedResponse, build_query_param_dependency, get_model_fields
+from app.common.enum import RoleScope
 from app.core.logger import get_logger
 from app.modules.tenant.api.dto.tenant_request import TenantCreateRequest, TenantUpdateRequest
 from app.modules.tenant.api.dto.tenant_response import ResponseTenant
@@ -32,7 +33,10 @@ FilterQueryParamDep = build_query_param_dependency(
 
 @router.post("", response_model=ResponseTenant, status_code=status.HTTP_201_CREATED)
 async def create_tenant(
-    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.TENANT_CREATE))],
+    _auth: Annotated[
+        object,
+        Depends(require_context_permissions(PermissionCode.TENANT_CREATE, allowed_scopes=frozenset({RoleScope.ADMIN}))),
+    ],
     body: Annotated[TenantCreateRequest, Body()],
     domain_service: TenantDomainServiceDep,
 ) -> ResponseTenant:
@@ -43,7 +47,10 @@ async def create_tenant(
 
 @router.put("/{tenant_id}", response_model=ResponseTenant, status_code=status.HTTP_200_OK)
 async def update_tenant(
-    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.TENANT_UPDATE))],
+    _auth: Annotated[
+        object,
+        Depends(require_context_permissions(PermissionCode.TENANT_UPDATE, allowed_scopes=frozenset({RoleScope.ADMIN}))),
+    ],
     tenant_id: Annotated[int, Path()],
     body: Annotated[TenantUpdateRequest, Body()],
     domain_service: TenantDomainServiceDep,
@@ -55,7 +62,10 @@ async def update_tenant(
 
 @router.delete("/{tenant_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_tenant(
-    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.TENANT_DELETE))],
+    _auth: Annotated[
+        object,
+        Depends(require_context_permissions(PermissionCode.TENANT_DELETE, allowed_scopes=frozenset({RoleScope.ADMIN}))),
+    ],
     tenant_id: Annotated[int, Path()],
     domain_service: TenantDomainServiceDep,
 ) -> None:
@@ -65,7 +75,10 @@ async def delete_tenant(
 
 @router.get("", response_model=PaginatedResponse[ResponseTenant])
 async def get_page_tenants(
-    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.TENANT_READ))],
+    _auth: Annotated[
+        object,
+        Depends(require_context_permissions(PermissionCode.TENANT_READ, allowed_scopes=frozenset({RoleScope.ADMIN}))),
+    ],
     filter_params: Annotated[TenantFilterParameter, Depends(FilterQueryParamDep)],
     pagination: Annotated[TenantPaginationParameter, Depends(PaginationQueryParamDep)],
     query_service: TenantQueryServiceDep,
@@ -87,7 +100,10 @@ async def get_page_tenants(
 
 @router.get("/all", response_model=list[ResponseTenant])
 async def get_all_tenants(
-    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.TENANT_READ))],
+    _auth: Annotated[
+        object,
+        Depends(require_context_permissions(PermissionCode.TENANT_READ, allowed_scopes=frozenset({RoleScope.ADMIN}))),
+    ],
     filter_params: Annotated[TenantFilterParameter, Depends(FilterQueryParamDep)],
     query_service: TenantQueryServiceDep,
 ) -> list[ResponseTenant]:
@@ -98,7 +114,10 @@ async def get_all_tenants(
 
 @router.get("/{tenant_id}", response_model=ResponseTenant)
 async def get_tenant(
-    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.TENANT_READ))],
+    _auth: Annotated[
+        object,
+        Depends(require_context_permissions(PermissionCode.TENANT_READ, allowed_scopes=frozenset({RoleScope.ADMIN}))),
+    ],
     tenant_id: Annotated[int, Path()],
     query_service: TenantQueryServiceDep,
 ) -> ResponseTenant:

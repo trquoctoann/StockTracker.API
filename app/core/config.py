@@ -52,6 +52,17 @@ class Settings(BaseSettings):
     AUTH_CONTEXT_TOKEN_TTL_SECONDS: int
     AUTH_CONTEXT_TOKEN_ISSUER: str
 
+    # Redis
+    REDIS_ENABLED: bool
+    REDIS_URL: str
+    REDIS_MAX_CONNECTIONS: int
+    REDIS_SOCKET_CONNECT_TIMEOUT: int
+    REDIS_SOCKET_TIMEOUT: int
+    REDIS_KEY_PREFIX: str
+    REDIS_KEY_SERVICE_PREFIX: str
+    REDIS_DEFAULT_TTL_SECONDS: int
+    REDIS_CIRCUIT_BREAKER_SECONDS: int
+
     @property
     def log_service_name(self) -> str:
         return (self.SERVICE_NAME or self.APP_NAME).strip()

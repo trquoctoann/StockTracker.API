@@ -13,6 +13,7 @@ from app.api.v1.router import api_v1_router  # noqa: E402
 from app.core.config import settings  # noqa: E402
 from app.core.database import dispose_engine  # noqa: E402
 from app.core.logger import get_logger  # noqa: E402
+from app.core.redis import dispose_redis  # noqa: E402
 from app.exception.handler import register_exception_handlers  # noqa: E402
 from app.middleware.auth_context import AuthContextMiddleware  # noqa: E402
 from app.middleware.request_context import RequestContextMiddleware  # noqa: E402
@@ -30,6 +31,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     )
     yield
     await dispose_engine()
+    await dispose_redis()
     _LOG.info("APPLICATION_SHUTDOWN")
 
 

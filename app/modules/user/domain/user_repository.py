@@ -24,3 +24,11 @@ class UserRoleRepository(ABC):
         self, *, user_id: uuid.UUID, scope: RoleScope, tenant_id: int | None, role_ids: set[int]
     ) -> UserRoleEntity:
         pass
+
+    @abstractmethod
+    async def delete_all_by_tenant_id(self, tenant_id: int) -> list[tuple[uuid.UUID, RoleScope, int | None]]:
+        pass
+
+    @abstractmethod
+    async def remove_role_id_from_all_assignments(self, role_id: int) -> list[tuple[uuid.UUID, RoleScope, int | None]]:
+        pass

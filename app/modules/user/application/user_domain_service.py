@@ -6,6 +6,12 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.common.base_mapper import SchemaMapper
 from app.common.base_service import CRUDService
+from app.common.cache import CacheService
+from app.common.cache_version_keys import (
+    get_user_cache_key,
+    get_user_role_version_cache_key,
+    get_user_version_cache_key,
+)
 from app.common.enum import RecordStatus, RoleScope, UserStatus
 from app.core.logger import get_logger
 from app.core.transaction_manager import TransactionManager
@@ -23,7 +29,7 @@ from app.modules.user.domain.identity_provider import (
 from app.modules.user.domain.user_entity import UserEntity
 from app.modules.user.domain.user_repository import UserRepository, UserRoleRepository
 
-logger = get_logger(__name__)
+_LOG = get_logger(__name__)
 
 
 class UserDomainService(CRUDService[UserEntity]):
@@ -36,6 +42,7 @@ class UserDomainService(CRUDService[UserEntity]):
         tenant_query_service: TenantQueryService,
         role_query_service: RoleQueryService,
         identity_provider: IdentityProvider,
+        cache: CacheService,
     ) -> None:
         self._session = session
         self._user_repository = user_repository
@@ -44,12 +51,13 @@ class UserDomainService(CRUDService[UserEntity]):
         self._tenant_query_service = tenant_query_service
         self._role_query_service = role_query_service
         self._identity_provider = identity_provider
+        self._cache = cache
 
     async def create(self, command: CreateUserCommand) -> UserEntity:
         async with TransactionManager(self._session):
-            logger.debug("USER_CREATING", command=command)
+            _LOG.debug("USER_CREATING", command=command)
 
-            await self.validate_command(command)
+            await self._validate_command(command)
             identity_user_id = await self._identity_provider.create_user(
                 IdentityCreateUserPayload(
                     username=command.username,
@@ -78,16 +86,16 @@ class UserDomainService(CRUDService[UserEntity]):
             created = await self._user_repository.bulk_create([entity])
             created_entity = created[0]
 
-            logger.debug("USER_CREATED", entity=created_entity)
+            _LOG.debug("USER_CREATED", entity=created_entity)
             return created_entity
 
     async def update(self, command: UpdateUserCommand) -> UserEntity:
         async with TransactionManager(self._session):
-            logger.debug("USER_UPDATING", command=command)
+            _LOG.debug("USER_UPDATING", command=command)
 
             existing = await self._query_service.get_by_id(command.id)
 
-            await self.validate_command(command, existing)
+            await self._validate_command(command, existing)
             await self._identity_provider.update_profile(
                 IdentityUpdateProfilePayload(
                     identity_user_id=str(existing.id),
@@ -118,12 +126,14 @@ class UserDomainService(CRUDService[UserEntity]):
             saved = await self._user_repository.bulk_update([updating])
             saved_entity = saved[0]
 
-            logger.debug("USER_UPDATED", entity=saved_entity)
+            await self._invalidate_user_cache(saved_entity.id)
+
+            _LOG.debug("USER_UPDATED", entity=saved_entity)
             return saved_entity
 
     async def set_roles(self, command: SetUserRolesCommand) -> UserEntity:
         async with TransactionManager(self._session):
-            logger.debug("USER_SET_ROLES", command=command)
+            _LOG.debug("USER_SET_ROLES", command=command)
 
             user = await self._query_service.get_by_id(command.id)
 
@@ -159,6 +169,8 @@ class UserDomainService(CRUDService[UserEntity]):
                 tenant_id=command.tenant_id,
                 role_ids=role_ids,
             )
+
+            await self._invalidate_user_role_version_caches([(user.id, expected_scope, command.tenant_id)])
             return await self._query_service.get_by_id(user.id, fetch_spec=UserFetchSpec(user_roles=True))
 
     async def update_profile(
@@ -169,6 +181,8 @@ class UserDomainService(CRUDService[UserEntity]):
         last_name: str | None,
     ) -> UserEntity:
         async with TransactionManager(self._session):
+            _LOG.debug("USER_UPDATING_PROFILE", user_id=user_id, first_name=first_name, last_name=last_name)
+
             existing = await self._query_service.get_by_id(user_id)
 
             existing.first_name = first_name
@@ -183,18 +197,26 @@ class UserDomainService(CRUDService[UserEntity]):
             )
 
             saved = await self._user_repository.bulk_update([existing])
+
+            await self._invalidate_user_cache(existing.id)
+
+            _LOG.debug("USER_UPDATED_PROFILE", user_id=user_id, first_name=first_name, last_name=last_name)
             return saved[0]
 
     async def update_password(self, user_id: uuid.UUID, *, new_password: str) -> None:
         async with TransactionManager(self._session):
+            _LOG.debug("USER_UPDATING_PASSWORD", user_id=user_id)
+
             user = await self._query_service.get_by_id(user_id)
             await self._identity_provider.update_password(
                 IdentityUpdatePasswordPayload(identity_user_id=str(user.id), new_password=new_password, temporary=False)
             )
 
+            _LOG.debug("USER_UPDATED_PASSWORD", user_id=user_id)
+
     async def delete(self, user_id: uuid.UUID) -> None:
         async with TransactionManager(self._session):
-            logger.debug("USER_DELETING", id=user_id)
+            _LOG.debug("USER_DELETING", id=user_id)
 
             existing = await self._query_service.get_by_id(user_id)
             await self._identity_provider.delete_user(str(existing.id))
@@ -202,11 +224,22 @@ class UserDomainService(CRUDService[UserEntity]):
             if existing.record_status != RecordStatus.DELETED:
                 existing.record_status = RecordStatus.DELETED
                 existing.version += 1
+                await self._invalidate_user_version_cache(existing.id)
             await self._user_repository.bulk_update([existing])
 
-            logger.debug("USER_DELETED", id=user_id)
+            await self._invalidate_user_cache(existing.id)
 
-    async def validate_command(
+            _LOG.debug("USER_DELETED", id=user_id)
+
+    async def delete_user_roles_for_soft_deleted_tenant(self, tenant_id: int) -> None:
+        keys = await self._user_role_repository.delete_all_by_tenant_id(tenant_id)
+        await self._invalidate_user_role_version_caches(keys)
+
+    async def remove_soft_deleted_role_from_user_assignments(self, role_id: int) -> None:
+        keys = await self._user_role_repository.remove_role_id_from_all_assignments(role_id)
+        await self._invalidate_user_role_version_caches(keys)
+
+    async def _validate_command(
         self,
         command: CreateUserCommand | UpdateUserCommand,
         existing: UserEntity | None = None,
@@ -234,3 +267,19 @@ class UserDomainService(CRUDService[UserEntity]):
             email, exclude_id=user_id
         ):
             raise BusinessViolationException(message_key="errors.business.user.email_taken", params={"email": email})
+
+    async def _invalidate_user_cache(self, user_id: uuid.UUID) -> None:
+        await self._cache.delete(get_user_cache_key(user_id))
+
+    async def _invalidate_user_version_cache(self, user_id: uuid.UUID) -> None:
+        await self._cache.delete(get_user_version_cache_key(user_id))
+
+    async def _invalidate_user_role_version_caches(self, keys: list[tuple[uuid.UUID, RoleScope, int | None]]) -> None:
+        if not keys:
+            return
+        cache_keys = list(
+            dict.fromkeys(
+                get_user_role_version_cache_key(user_id, scope.value, tenant_id) for user_id, scope, tenant_id in keys
+            )
+        )
+        await self._cache.delete(*cache_keys)

@@ -12,21 +12,27 @@ from app.modules.tenant.application.command.tenant_command import CreateTenantCo
 from app.modules.tenant.application.tenant_query_service import TenantQueryService
 from app.modules.tenant.domain.tenant_entity import TenantEntity
 from app.modules.tenant.domain.tenant_repository import TenantRepository
+from app.modules.user.application.user_domain_service import UserDomainService
 
-logger = get_logger(__name__)
+_LOG = get_logger(__name__)
 
 
 class TenantDomainService(CRUDService[TenantEntity]):
     def __init__(
-        self, session: AsyncSession, tenant_repository: TenantRepository, query_service: TenantQueryService
+        self,
+        session: AsyncSession,
+        tenant_repository: TenantRepository,
+        query_service: TenantQueryService,
+        user_domain_service: UserDomainService,
     ) -> None:
         self._session = session
         self._tenant_repository = tenant_repository
         self._query_service = query_service
+        self._user_domain_service = user_domain_service
 
     async def create(self, command: CreateTenantCommand) -> TenantEntity:
         async with TransactionManager(self._session):
-            logger.debug("TENANT_CREATING", command=command)
+            _LOG.debug("TENANT_CREATING", command=command)
 
             await self.validate_command(command)
 
@@ -50,7 +56,7 @@ class TenantDomainService(CRUDService[TenantEntity]):
 
     async def update(self, command: UpdateTenantCommand) -> TenantEntity:
         async with TransactionManager(self._session):
-            logger.debug("TENANT_UPDATING", command=command)
+            _LOG.debug("TENANT_UPDATING", command=command)
 
             existing = await self._query_service.get_by_id(command.id)
 
@@ -75,13 +81,15 @@ class TenantDomainService(CRUDService[TenantEntity]):
 
     async def delete(self, id: int) -> None:
         async with TransactionManager(self._session):
-            logger.debug("TENANT_DELETING", id=id)
+            _LOG.debug("TENANT_DELETING", id=id)
 
             existing = await self._query_service.get_by_id(id)
             existing.record_status = RecordStatus.DELETED
             await self._tenant_repository.bulk_update([existing])
 
-            logger.debug("TENANT_DELETED", id=id)
+            await self._user_domain_service.delete_user_roles_for_soft_deleted_tenant(id)
+
+            _LOG.debug("TENANT_DELETED", id=id)
 
     async def validate_command(self, command: CreateTenantCommand | UpdateTenantCommand) -> None:
         if isinstance(command, UpdateTenantCommand):

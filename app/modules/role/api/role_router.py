@@ -6,6 +6,7 @@ from app.common.auth.auth_access import require_context_permissions
 from app.common.auth.permission_codes import PermissionCode
 from app.common.base_mapper import SchemaMapper
 from app.common.base_schema import PaginatedResponse, build_query_param_dependency, get_model_fields
+from app.common.enum import RoleScope
 from app.core.logger import get_logger
 from app.modules.role.api.dto.role_request import RoleCreateRequest, RoleSetPermissionsRequest, RoleUpdateRequest
 from app.modules.role.api.dto.role_response import ResponseRole
@@ -32,7 +33,10 @@ FilterQueryParamDep = build_query_param_dependency(
 
 @router.post("", response_model=ResponseRole, status_code=status.HTTP_201_CREATED)
 async def create_role(
-    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.ROLE_CREATE))],
+    _auth: Annotated[
+        object,
+        Depends(require_context_permissions(PermissionCode.ROLE_CREATE, allowed_scopes=frozenset({RoleScope.ADMIN}))),
+    ],
     body: Annotated[RoleCreateRequest, Body()],
     domain_service: RoleDomainServiceDep,
 ) -> ResponseRole:
@@ -43,7 +47,10 @@ async def create_role(
 
 @router.put("/{role_id}", response_model=ResponseRole, status_code=status.HTTP_200_OK)
 async def update_role(
-    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.ROLE_UPDATE))],
+    _auth: Annotated[
+        object,
+        Depends(require_context_permissions(PermissionCode.ROLE_UPDATE, allowed_scopes=frozenset({RoleScope.ADMIN}))),
+    ],
     role_id: Annotated[int, Path()],
     body: Annotated[RoleUpdateRequest, Body()],
     domain_service: RoleDomainServiceDep,
@@ -55,7 +62,10 @@ async def update_role(
 
 @router.delete("/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_role(
-    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.ROLE_DELETE))],
+    _auth: Annotated[
+        object,
+        Depends(require_context_permissions(PermissionCode.ROLE_DELETE, allowed_scopes=frozenset({RoleScope.ADMIN}))),
+    ],
     role_id: Annotated[int, Path()],
     domain_service: RoleDomainServiceDep,
 ) -> None:
@@ -65,7 +75,10 @@ async def delete_role(
 
 @router.get("", response_model=PaginatedResponse[ResponseRole])
 async def get_page_roles(
-    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.ROLE_READ))],
+    _auth: Annotated[
+        object,
+        Depends(require_context_permissions(PermissionCode.ROLE_READ, allowed_scopes=frozenset({RoleScope.ADMIN}))),
+    ],
     filter_params: Annotated[RoleFilterParameter, Depends(FilterQueryParamDep)],
     pagination: Annotated[RolePaginationParameter, Depends(PaginationQueryParamDep)],
     query_service: RoleQueryServiceDep,
@@ -83,7 +96,10 @@ async def get_page_roles(
 
 @router.get("/all", response_model=list[ResponseRole])
 async def get_all_roles(
-    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.ROLE_READ))],
+    _auth: Annotated[
+        object,
+        Depends(require_context_permissions(PermissionCode.ROLE_READ, allowed_scopes=frozenset({RoleScope.ADMIN}))),
+    ],
     filter_params: Annotated[RoleFilterParameter, Depends(FilterQueryParamDep)],
     query_service: RoleQueryServiceDep,
 ) -> list[ResponseRole]:
@@ -94,7 +110,10 @@ async def get_all_roles(
 
 @router.get("/{role_id}", response_model=ResponseRole)
 async def get_role(
-    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.ROLE_READ))],
+    _auth: Annotated[
+        object,
+        Depends(require_context_permissions(PermissionCode.ROLE_READ, allowed_scopes=frozenset({RoleScope.ADMIN}))),
+    ],
     role_id: Annotated[int, Path()],
     query_service: RoleQueryServiceDep,
 ) -> ResponseRole:
@@ -105,7 +124,14 @@ async def get_role(
 
 @router.put("/{role_id}/permissions", response_model=ResponseRole, status_code=status.HTTP_200_OK)
 async def set_role_permissions(
-    _auth: Annotated[object, Depends(require_context_permissions(PermissionCode.ROLE_MANAGE_PERMISSIONS))],
+    _auth: Annotated[
+        object,
+        Depends(
+            require_context_permissions(
+                PermissionCode.ROLE_MANAGE_PERMISSIONS, allowed_scopes=frozenset({RoleScope.ADMIN})
+            )
+        ),
+    ],
     role_id: Annotated[int, Path()],
     body: Annotated[RoleSetPermissionsRequest, Body()],
     domain_service: RoleDomainServiceDep,
