@@ -21,20 +21,20 @@ class CreateRoleCommand(BaseCommand):
 
     @field_validator("permission_ids")
     @classmethod
-    def _validate_permission_ids(cls, v: list[int] | None) -> list[int] | None:
+    def _validate_permission_ids(cls, v: set[int] | list[int] | None) -> set[int] | None:
         if v is None:
             return None
-        v = [int(x) for x in v]
-        if any(x <= 0 for x in v):
+        items = [int(x) for x in v]
+        if any(x <= 0 for x in items):
             raise ValidationException(message_key="errors.business.role.permission_ids_invalid")
         seen: set[int] = set()
         out: list[int] = []
-        for x in v:
+        for x in items:
             if x in seen:
                 continue
             seen.add(x)
             out.append(x)
-        return out
+        return set(out)
 
 
 class UpdateRoleCommand(CreateRoleCommand):

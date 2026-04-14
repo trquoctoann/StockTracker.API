@@ -54,7 +54,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["app"]
+known-first-party = ["app", "tests"]
 
 [tool.pyright]
 pythonVersion = "3.12"
@@ -67,6 +67,11 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 filterwarnings = [
     "ignore::DeprecationWarning",
+]
+markers = [
+    "unit: pure-logic tests with no I/O",
+    "integration: tests that exercise the HTTP layer with stubbed dependencies",
+    "e2e: end-to-end tests against a live server",
 ]
 
 [tool.hatch.build.targets.wheel]
