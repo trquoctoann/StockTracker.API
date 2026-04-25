@@ -63,6 +63,14 @@ class Settings(BaseSettings):
     REDIS_DEFAULT_TTL_SECONDS: int
     REDIS_CIRCUIT_BREAKER_SECONDS: int
 
+    # RabbitMQ
+    RABBITMQ_ENABLED: bool
+    RABBITMQ_URL: str
+    RABBITMQ_EXCHANGE_NAME: str
+    RABBITMQ_EXCHANGE_TYPE: str
+    RABBITMQ_PREFETCH_COUNT: int
+    RABBITMQ_RECONNECT_DELAY_SECONDS: int
+
     @property
     def log_service_name(self) -> str:
         return (self.SERVICE_NAME or self.APP_NAME).strip()

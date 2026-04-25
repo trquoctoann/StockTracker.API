@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -10,9 +11,11 @@ from fastapi import FastAPI  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
 from app.api.v1.router import api_v1_router  # noqa: E402
+from app.common.consumer_registry import start_all_consumers  # noqa: E402
 from app.core.config import settings  # noqa: E402
 from app.core.database import dispose_engine  # noqa: E402
 from app.core.logger import get_logger  # noqa: E402
+from app.core.rabbitmq import connect_rabbitmq, dispose_rabbitmq  # noqa: E402
 from app.core.redis import dispose_redis  # noqa: E402
 from app.exception.handler import register_exception_handlers  # noqa: E402
 from app.middleware.auth_context import AuthContextMiddleware  # noqa: E402
@@ -29,7 +32,17 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         app_version=settings.APP_VERSION,
         environment=settings.ENVIRONMENT,
     )
+
+    await connect_rabbitmq()
+    consumer_tasks = await start_all_consumers()
+
     yield
+
+    for task in consumer_tasks:
+        task.cancel()
+    await asyncio.gather(*consumer_tasks, return_exceptions=True)
+
+    await dispose_rabbitmq()
     await dispose_engine()
     await dispose_redis()
     _LOG.info("APPLICATION_SHUTDOWN")

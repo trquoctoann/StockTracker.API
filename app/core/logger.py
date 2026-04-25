@@ -373,6 +373,8 @@ def setup_logging() -> None:
     logging.getLogger("asyncio").setLevel(logging.WARNING)
     logging.getLogger("watchfiles").setLevel(logging.WARNING)
     logging.getLogger("multipart").setLevel(logging.WARNING)
+    logging.getLogger("aio_pika").setLevel(logging.WARNING)
+    logging.getLogger("aiormq").setLevel(logging.WARNING)
 
     structlog.configure(
         processors=[

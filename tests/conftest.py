@@ -39,6 +39,12 @@ os.environ.setdefault("REDIS_KEY_PREFIX", "test")
 os.environ.setdefault("REDIS_KEY_SERVICE_PREFIX", "api")
 os.environ.setdefault("REDIS_DEFAULT_TTL_SECONDS", "60")
 os.environ.setdefault("REDIS_CIRCUIT_BREAKER_SECONDS", "5")
+os.environ.setdefault("RABBITMQ_ENABLED", "false")
+os.environ.setdefault("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")
+os.environ.setdefault("RABBITMQ_EXCHANGE_NAME", "stocktracker.topic")
+os.environ.setdefault("RABBITMQ_EXCHANGE_TYPE", "topic")
+os.environ.setdefault("RABBITMQ_PREFETCH_COUNT", "10")
+os.environ.setdefault("RABBITMQ_RECONNECT_DELAY_SECONDS", "5")
 
 import pytest
 
