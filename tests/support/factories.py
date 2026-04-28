@@ -6,6 +6,7 @@ from datetime import datetime
 from app.common.auth.principals import ContextPrincipal, IdentityPrincipal
 from app.common.enum import RecordStatus, RoleScope, RoleType, StockExchange, StockType, UserStatus
 from app.modules.industry.domain.industry_entity import IndustryEntity
+from app.modules.market_index.domain.market_index_entity import MarketIndexEntity
 from app.modules.permission.domain.permission_entity import PermissionEntity
 from app.modules.role.domain.role_entity import RoleEntity
 from app.modules.stock.domain.stock_entity import StockEntity
@@ -198,6 +199,31 @@ def make_stock(
         type=type,
         record_status=record_status,
         industries=industries,
+        created_at=_NOW,
+        created_by="system",
+        updated_at=_NOW,
+        updated_by="system",
+    )
+
+
+def make_market_index(
+    *,
+    id: int = 1,
+    symbol: str = "VNINDEX",
+    name: str = "VN-Index",
+    description: str | None = "Vietnam Ho Chi Minh Index",
+    group: str | None = "HOSE",
+    record_status: RecordStatus = RecordStatus.ENABLED,
+    stocks: list[StockEntity] | None = None,
+) -> MarketIndexEntity:
+    return MarketIndexEntity(
+        id=id,
+        symbol=symbol,
+        name=name,
+        description=description,
+        group=group,
+        record_status=record_status,
+        stocks=stocks,
         created_at=_NOW,
         created_by="system",
         updated_at=_NOW,

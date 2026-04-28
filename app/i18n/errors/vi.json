@@ -58,6 +58,9 @@
       },
       "stock": {
         "not_found": "Không tìm thấy cổ phiếu có id: {id}."
+      },
+      "market_index": {
+        "not_found": "Không tìm thấy chỉ số thị trường có id: {id}."
       }
     },
     "rate_limit": {

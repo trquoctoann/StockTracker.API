@@ -15,6 +15,14 @@ from app.modules.industry.application.industry_domain_service import IndustryDom
 from app.modules.industry.application.industry_query_service import IndustryQueryService
 from app.modules.industry.industry_dependency import get_industry_domain_service
 from app.modules.industry.industry_query_dependency import get_industry_query_service, get_industry_repository
+from app.modules.market_index.application.market_index_domain_service import MarketIndexDomainService
+from app.modules.market_index.application.market_index_query_service import MarketIndexQueryService
+from app.modules.market_index.market_index_dependency import get_market_index_domain_service
+from app.modules.market_index.market_index_query_dependency import (
+    get_index_composition_repository,
+    get_market_index_query_service,
+    get_market_index_repository,
+)
 from app.modules.permission.application.permission_query_service import PermissionQueryService
 from app.modules.permission.permission_dependency import get_permission_query_service, get_permission_repository
 from app.modules.role.application.role_domain_service import RoleDomainService
@@ -163,6 +171,26 @@ def mock_stock_domain_service():
     return AsyncMock(spec=StockDomainService)
 
 
+@pytest.fixture()
+def mock_market_index_repository():
+    return AsyncMock()
+
+
+@pytest.fixture()
+def mock_index_composition_repository():
+    return AsyncMock()
+
+
+@pytest.fixture()
+def mock_market_index_query_service():
+    return AsyncMock(spec=MarketIndexQueryService)
+
+
+@pytest.fixture()
+def mock_market_index_domain_service():
+    return AsyncMock(spec=MarketIndexDomainService)
+
+
 def _build_context_token(
     *,
     scope: RoleScope = RoleScope.ADMIN,
@@ -259,6 +287,10 @@ async def app_client(
     app.dependency_overrides[get_stock_industry_repository] = lambda: mock_stock_industry_repository
     app.dependency_overrides[get_stock_query_service] = lambda: mock_stock_query_service
     app.dependency_overrides[get_stock_domain_service] = lambda: mock_stock_domain_service
+    app.dependency_overrides[get_market_index_repository] = lambda: mock_market_index_repository
+    app.dependency_overrides[get_index_composition_repository] = lambda: mock_index_composition_repository
+    app.dependency_overrides[get_market_index_query_service] = lambda: mock_market_index_query_service
+    app.dependency_overrides[get_market_index_domain_service] = lambda: mock_market_index_domain_service
 
     transport = ASGITransport(app=app)  # type: ignore[arg-type]
     async with AsyncClient(transport=transport, base_url="http://test") as client:

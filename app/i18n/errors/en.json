@@ -58,6 +58,9 @@
       },
       "stock": {
         "not_found": "Stock with id: {id} was not found."
+      },
+      "market_index": {
+        "not_found": "Market index with id: {id} was not found."
       }
     },
     "rate_limit": {
