@@ -35,4 +35,8 @@ class UserRoleModel(SQLModel, table=True):
     role_ids: list[int] = Field(default_factory=list, sa_column=Column(ARRAY(Integer), nullable=False))
     version: int = Field(nullable=False)
 
-    __table_args__ = (Index("ix_user_role_role_ids", "role_ids", postgresql_using="gin"),)
+    __table_args__ = (
+        Index("ix_user_role_tenant_id", "tenant_id"),
+        Index("ix_user_role_user_id", "user_id"),
+        Index("ix_user_role_role_ids", "role_ids", postgresql_using="gin"),
+    )

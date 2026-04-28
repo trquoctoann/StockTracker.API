@@ -59,8 +59,8 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("role_id", sa.Integer(), nullable=False),
         sa.Column("permission_id", sa.Integer(), nullable=False),
-        sa.ForeignKeyConstraint(["role_id"], ["role.id"]),
-        sa.ForeignKeyConstraint(["permission_id"], ["permission.id"]),
+        sa.ForeignKeyConstraint(["role_id"], ["role.id"], name="fk_role_permission_role_id"),
+        sa.ForeignKeyConstraint(["permission_id"], ["permission.id"], name="fk_role_permission_permission_id"),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_role_permission_permission_id", "role_permission", ["permission_id"], unique=False)

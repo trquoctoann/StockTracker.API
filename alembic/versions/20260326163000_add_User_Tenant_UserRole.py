@@ -40,9 +40,10 @@ def upgrade() -> None:
         sa.Column("created_by", sa.String(length=255), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.Column("updated_by", sa.String(length=255), nullable=False),
-        sa.ForeignKeyConstraint(["parent_tenant_id"], ["tenant.id"]),
+        sa.ForeignKeyConstraint(["parent_tenant_id"], ["tenant.id"], name="fk_tenant_parent_tenant_id"),
         sa.PrimaryKeyConstraint("id"),
     )
+    op.create_index("ix_tenant_parent_tenant_id", "tenant", ["parent_tenant_id"], unique=False)
 
     op.create_table(
         "user",
@@ -62,6 +63,7 @@ def upgrade() -> None:
         sa.UniqueConstraint("username", name="uix_user_username"),
         sa.UniqueConstraint("email", name="uix_user_email"),
     )
+
     op.create_table(
         "user_role",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -70,10 +72,12 @@ def upgrade() -> None:
         sa.Column("tenant_id", sa.Integer(), nullable=True),
         sa.Column("role_ids", postgresql.ARRAY(sa.Integer()), nullable=False),
         sa.Column("version", sa.Integer(), nullable=False),
-        sa.ForeignKeyConstraint(["tenant_id"], ["tenant.id"]),
-        sa.ForeignKeyConstraint(["user_id"], ["user.id"]),
+        sa.ForeignKeyConstraint(["tenant_id"], ["tenant.id"], name="fk_user_role_tenant_id"),
+        sa.ForeignKeyConstraint(["user_id"], ["user.id"], name="fk_user_role_user_id"),
         sa.PrimaryKeyConstraint("id"),
     )
+    op.create_index("ix_user_role_tenant_id", "user_role", ["tenant_id"], unique=False)
+    op.create_index("ix_user_role_user_id", "user_role", ["user_id"], unique=False)
     op.create_index(
         "ix_user_role_role_ids",
         "user_role",
@@ -84,6 +88,9 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    op.drop_index("ix_tenant_parent_tenant_id", table_name="tenant")
+    op.drop_index("ix_user_role_tenant_id", table_name="user_role")
+    op.drop_index("ix_user_role_user_id", table_name="user_role")
     op.drop_index("ix_user_role_role_ids", table_name="user_role")
     op.drop_table("user_role")
     op.drop_table("user")
