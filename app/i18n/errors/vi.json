@@ -52,6 +52,9 @@
       },
       "tenant": {
         "not_found": "Không tìm thấy tenant có id: {id}."
+      },
+      "industry": {
+        "not_found": "Không tìm thấy ngành có id: {id}."
       }
     },
     "rate_limit": {

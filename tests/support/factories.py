@@ -5,6 +5,7 @@ from datetime import datetime
 
 from app.common.auth.principals import ContextPrincipal, IdentityPrincipal
 from app.common.enum import RecordStatus, RoleScope, RoleType, UserStatus
+from app.modules.industry.domain.industry_entity import IndustryEntity
 from app.modules.permission.domain.permission_entity import PermissionEntity
 from app.modules.role.domain.role_entity import RoleEntity
 from app.modules.tenant.domain.tenant_entity import TenantEntity
@@ -129,7 +130,7 @@ def make_context_principal(
     user_version: int = 1,
     user_roles_version: int = 1,
     role_versions: dict[int, int] | None = None,
-    permissions_bitmap: int = 0b11111111111111,
+    permissions_bitmap: int = (1 << 50) - 1,
 ) -> ContextPrincipal:
     return ContextPrincipal(
         subject=subject or DEFAULT_USER_ID_STR,
@@ -152,4 +153,25 @@ def make_identity_principal(
         subject=subject or DEFAULT_USER_ID_STR,
         username=username,
         email=email,
+    )
+
+
+def make_industry(
+    *,
+    id: int = 1,
+    code: str = "IND_001",
+    name: str = "Technology",
+    level: int = 1,
+    record_status: RecordStatus = RecordStatus.ENABLED,
+) -> IndustryEntity:
+    return IndustryEntity(
+        id=id,
+        code=code,
+        name=name,
+        level=level,
+        record_status=record_status,
+        created_at=_NOW,
+        created_by="system",
+        updated_at=_NOW,
+        updated_by="system",
     )

@@ -11,6 +11,10 @@ from app.common.cache import get_cache_service
 from app.common.enum import RoleScope
 from app.core.database import get_session
 from app.main import create_app
+from app.modules.industry.application.industry_domain_service import IndustryDomainService
+from app.modules.industry.application.industry_query_service import IndustryQueryService
+from app.modules.industry.industry_dependency import get_industry_domain_service
+from app.modules.industry.industry_query_dependency import get_industry_query_service, get_industry_repository
 from app.modules.permission.application.permission_query_service import PermissionQueryService
 from app.modules.permission.permission_dependency import get_permission_query_service, get_permission_repository
 from app.modules.role.application.role_domain_service import RoleDomainService
@@ -116,11 +120,26 @@ def mock_permission_query_service():
     return AsyncMock(spec=PermissionQueryService)
 
 
+@pytest.fixture()
+def mock_industry_repository():
+    return AsyncMock()
+
+
+@pytest.fixture()
+def mock_industry_query_service():
+    return AsyncMock(spec=IndustryQueryService)
+
+
+@pytest.fixture()
+def mock_industry_domain_service():
+    return AsyncMock(spec=IndustryDomainService)
+
+
 def _build_context_token(
     *,
     scope: RoleScope = RoleScope.ADMIN,
     tenant_id: int | None = None,
-    permissions_bitmap: int = 0b11111111111111,
+    permissions_bitmap: int = (1 << 50) - 1,
 ) -> str:
     codec = ContextTokenCodecImpl()
     token, _ = codec.encode(
@@ -165,6 +184,17 @@ async def app_client(
     mock_tenant_domain_service,
     mock_permission_repository,
     mock_permission_query_service,
+    mock_industry_repository,
+    mock_industry_query_service,
+    mock_industry_domain_service,
+    mock_market_index_repository,
+    mock_index_composition_repository,
+    mock_market_index_query_service,
+    mock_market_index_domain_service,
+    mock_stock_repository,
+    mock_stock_industry_repository,
+    mock_stock_query_service,
+    mock_stock_domain_service,
 ) -> AsyncIterator[AsyncClient]:
     from app.common.cache_version_keys import (
         get_role_version_cache_key,
@@ -194,6 +224,9 @@ async def app_client(
     app.dependency_overrides[get_tenant_domain_service] = lambda: mock_tenant_domain_service
     app.dependency_overrides[get_permission_repository] = lambda: mock_permission_repository
     app.dependency_overrides[get_permission_query_service] = lambda: mock_permission_query_service
+    app.dependency_overrides[get_industry_repository] = lambda: mock_industry_repository
+    app.dependency_overrides[get_industry_query_service] = lambda: mock_industry_query_service
+    app.dependency_overrides[get_industry_domain_service] = lambda: mock_industry_domain_service
 
     transport = ASGITransport(app=app)  # type: ignore[arg-type]
     async with AsyncClient(transport=transport, base_url="http://test") as client:

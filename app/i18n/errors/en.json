@@ -52,6 +52,9 @@
       },
       "tenant": {
         "not_found": "Tenant with id: {id} was not found."
+      },
+      "industry": {
+        "not_found": "Industry with id: {id} was not found."
       }
     },
     "rate_limit": {

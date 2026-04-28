@@ -19,6 +19,11 @@ class PermissionCode(StrEnum):
     TENANT_UPDATE = "TENANT_UPDATE"
     TENANT_DELETE = "TENANT_DELETE"
 
+    INDUSTRY_READ = "INDUSTRY_READ"
+    INDUSTRY_CREATE = "INDUSTRY_CREATE"
+    INDUSTRY_UPDATE = "INDUSTRY_UPDATE"
+    INDUSTRY_DELETE = "INDUSTRY_DELETE"
+
 
 class PermissionBitmap:
     def __init__(self) -> None:
