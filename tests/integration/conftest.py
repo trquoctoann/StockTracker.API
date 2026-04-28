@@ -26,6 +26,14 @@ from app.modules.role.role_query_dependency import (
     get_role_query_service,
     get_role_repository,
 )
+from app.modules.stock.application.stock_domain_service import StockDomainService
+from app.modules.stock.application.stock_query_service import StockQueryService
+from app.modules.stock.stock_dependency import get_stock_domain_service
+from app.modules.stock.stock_query_dependency import (
+    get_stock_industry_repository,
+    get_stock_query_service,
+    get_stock_repository,
+)
 from app.modules.tenant.application.tenant_domain_service import TenantDomainService
 from app.modules.tenant.application.tenant_query_service import TenantQueryService
 from app.modules.tenant.tenant_dependency import get_tenant_domain_service
@@ -135,6 +143,26 @@ def mock_industry_domain_service():
     return AsyncMock(spec=IndustryDomainService)
 
 
+@pytest.fixture()
+def mock_stock_repository():
+    return AsyncMock()
+
+
+@pytest.fixture()
+def mock_stock_industry_repository():
+    return AsyncMock()
+
+
+@pytest.fixture()
+def mock_stock_query_service():
+    return AsyncMock(spec=StockQueryService)
+
+
+@pytest.fixture()
+def mock_stock_domain_service():
+    return AsyncMock(spec=StockDomainService)
+
+
 def _build_context_token(
     *,
     scope: RoleScope = RoleScope.ADMIN,
@@ -227,6 +255,10 @@ async def app_client(
     app.dependency_overrides[get_industry_repository] = lambda: mock_industry_repository
     app.dependency_overrides[get_industry_query_service] = lambda: mock_industry_query_service
     app.dependency_overrides[get_industry_domain_service] = lambda: mock_industry_domain_service
+    app.dependency_overrides[get_stock_repository] = lambda: mock_stock_repository
+    app.dependency_overrides[get_stock_industry_repository] = lambda: mock_stock_industry_repository
+    app.dependency_overrides[get_stock_query_service] = lambda: mock_stock_query_service
+    app.dependency_overrides[get_stock_domain_service] = lambda: mock_stock_domain_service
 
     transport = ASGITransport(app=app)  # type: ignore[arg-type]
     async with AsyncClient(transport=transport, base_url="http://test") as client:

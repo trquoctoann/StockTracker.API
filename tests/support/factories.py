@@ -4,10 +4,11 @@ import uuid
 from datetime import datetime
 
 from app.common.auth.principals import ContextPrincipal, IdentityPrincipal
-from app.common.enum import RecordStatus, RoleScope, RoleType, UserStatus
+from app.common.enum import RecordStatus, RoleScope, RoleType, StockExchange, StockType, UserStatus
 from app.modules.industry.domain.industry_entity import IndustryEntity
 from app.modules.permission.domain.permission_entity import PermissionEntity
 from app.modules.role.domain.role_entity import RoleEntity
+from app.modules.stock.domain.stock_entity import StockEntity
 from app.modules.tenant.domain.tenant_entity import TenantEntity
 from app.modules.user.domain.user_entity import UserEntity, UserRoleEntity
 
@@ -170,6 +171,33 @@ def make_industry(
         name=name,
         level=level,
         record_status=record_status,
+        created_at=_NOW,
+        created_by="system",
+        updated_at=_NOW,
+        updated_by="system",
+    )
+
+
+def make_stock(
+    *,
+    id: int = 1,
+    symbol: str = "FPT",
+    name: str = "FPT Corporation",
+    short_name: str | None = "FPT",
+    exchange: StockExchange = StockExchange.HSX,
+    type: StockType = StockType.STOCK,
+    record_status: RecordStatus = RecordStatus.ENABLED,
+    industries: list[IndustryEntity] | None = None,
+) -> StockEntity:
+    return StockEntity(
+        id=id,
+        symbol=symbol,
+        name=name,
+        short_name=short_name,
+        exchange=exchange,
+        type=type,
+        record_status=record_status,
+        industries=industries,
         created_at=_NOW,
         created_by="system",
         updated_at=_NOW,

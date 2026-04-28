@@ -55,6 +55,9 @@
       },
       "industry": {
         "not_found": "Industry with id: {id} was not found."
+      },
+      "stock": {
+        "not_found": "Stock with id: {id} was not found."
       }
     },
     "rate_limit": {

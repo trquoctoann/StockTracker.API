@@ -55,6 +55,9 @@
       },
       "industry": {
         "not_found": "Không tìm thấy ngành có id: {id}."
+      },
+      "stock": {
+        "not_found": "Không tìm thấy cổ phiếu có id: {id}."
       }
     },
     "rate_limit": {
