@@ -1,3 +1,4 @@
+from app.modules.company_profile.infrastructure.persistence.company_profile_model import CompanyProfileModel
 from app.modules.industry.infrastructure.persistence.industry_model import IndustryModel
 from app.modules.market_index.infrastructure.persistence.market_index_model import (
     IndexCompositionModel,
@@ -10,6 +11,7 @@ from app.modules.tenant.infrastructure.persistence.tenant_model import TenantMod
 from app.modules.user.infrastructure.persistence.user_model import UserModel, UserRoleModel
 
 __all__ = [
+    "CompanyProfileModel",
     "IndexCompositionModel",
     "IndustryModel",
     "MarketIndexModel",

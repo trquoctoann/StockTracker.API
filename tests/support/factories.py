@@ -5,6 +5,7 @@ from datetime import datetime
 
 from app.common.auth.principals import ContextPrincipal, IdentityPrincipal
 from app.common.enum import RecordStatus, RoleScope, RoleType, StockExchange, StockType, UserStatus
+from app.modules.company_profile.domain.company_profile_entity import CompanyProfileEntity
 from app.modules.industry.domain.industry_entity import IndustryEntity
 from app.modules.market_index.domain.market_index_entity import MarketIndexEntity
 from app.modules.permission.domain.permission_entity import PermissionEntity
@@ -228,4 +229,17 @@ def make_market_index(
         created_by="system",
         updated_at=_NOW,
         updated_by="system",
+    )
+
+
+def make_company_profile(
+    *,
+    id: int = 1,
+    symbol: str = "FPT",
+    stock_id: int = 1,
+) -> CompanyProfileEntity:
+    return CompanyProfileEntity(
+        id=id,
+        symbol=symbol,
+        stock_id=stock_id,
     )

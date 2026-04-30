@@ -61,6 +61,9 @@
       },
       "market_index": {
         "not_found": "Không tìm thấy chỉ số thị trường có id: {id}."
+      },
+      "company_profile": {
+        "not_found": "Không tìm thấy hồ sơ công ty cho cổ phiếu có id: {id}."
       }
     },
     "rate_limit": {
