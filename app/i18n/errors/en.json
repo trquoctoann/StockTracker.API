@@ -61,6 +61,9 @@
       },
       "market_index": {
         "not_found": "Market index with id: {id} was not found."
+      },
+      "company_profile": {
+        "not_found": "Company profile for stock id: {id} was not found."
       }
     },
     "rate_limit": {

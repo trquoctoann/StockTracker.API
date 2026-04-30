@@ -11,6 +11,13 @@ from app.common.cache import get_cache_service
 from app.common.enum import RoleScope
 from app.core.database import get_session
 from app.main import create_app
+from app.modules.company_profile.application.company_profile_domain_service import CompanyProfileDomainService
+from app.modules.company_profile.application.company_profile_query_service import CompanyProfileQueryService
+from app.modules.company_profile.company_profile_dependency import get_company_profile_domain_service
+from app.modules.company_profile.company_profile_query_dependency import (
+    get_company_profile_query_service,
+    get_company_profile_repository,
+)
 from app.modules.industry.application.industry_domain_service import IndustryDomainService
 from app.modules.industry.application.industry_query_service import IndustryQueryService
 from app.modules.industry.industry_dependency import get_industry_domain_service
@@ -191,6 +198,21 @@ def mock_market_index_domain_service():
     return AsyncMock(spec=MarketIndexDomainService)
 
 
+@pytest.fixture()
+def mock_company_profile_repository():
+    return AsyncMock()
+
+
+@pytest.fixture()
+def mock_company_profile_query_service():
+    return AsyncMock(spec=CompanyProfileQueryService)
+
+
+@pytest.fixture()
+def mock_company_profile_domain_service():
+    return AsyncMock(spec=CompanyProfileDomainService)
+
+
 def _build_context_token(
     *,
     scope: RoleScope = RoleScope.ADMIN,
@@ -251,6 +273,9 @@ async def app_client(
     mock_stock_industry_repository,
     mock_stock_query_service,
     mock_stock_domain_service,
+    mock_company_profile_repository,
+    mock_company_profile_query_service,
+    mock_company_profile_domain_service,
 ) -> AsyncIterator[AsyncClient]:
     from app.common.cache_version_keys import (
         get_role_version_cache_key,
@@ -291,6 +316,9 @@ async def app_client(
     app.dependency_overrides[get_index_composition_repository] = lambda: mock_index_composition_repository
     app.dependency_overrides[get_market_index_query_service] = lambda: mock_market_index_query_service
     app.dependency_overrides[get_market_index_domain_service] = lambda: mock_market_index_domain_service
+    app.dependency_overrides[get_company_profile_repository] = lambda: mock_company_profile_repository
+    app.dependency_overrides[get_company_profile_query_service] = lambda: mock_company_profile_query_service
+    app.dependency_overrides[get_company_profile_domain_service] = lambda: mock_company_profile_domain_service
 
     transport = ASGITransport(app=app)  # type: ignore[arg-type]
     async with AsyncClient(transport=transport, base_url="http://test") as client:

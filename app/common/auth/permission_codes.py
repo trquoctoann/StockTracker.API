@@ -34,6 +34,9 @@ class PermissionCode(StrEnum):
     MARKET_INDEX_UPDATE = "MARKET_INDEX_UPDATE"
     MARKET_INDEX_DELETE = "MARKET_INDEX_DELETE"
 
+    COMPANY_PROFILE_READ = "COMPANY_PROFILE_READ"
+    COMPANY_PROFILE_UPDATE = "COMPANY_PROFILE_UPDATE"
+
 
 class PermissionBitmap:
     def __init__(self) -> None:
