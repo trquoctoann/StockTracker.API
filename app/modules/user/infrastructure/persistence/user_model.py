@@ -2,9 +2,9 @@ import uuid
 from typing import ClassVar
 
 from sqlalchemy import Column
-from sqlmodel import ARRAY, Field, Index, Integer, SQLModel, UniqueConstraint
+from sqlmodel import ARRAY, Field, Index, Integer, UniqueConstraint
 
-from app.common.base_model import BaseSQLModelWithUUID
+from app.common.base_model import BaseNonAuditableSQLModelWithID, BaseSQLModelWithUUID
 from app.common.enum import RecordStatus, RoleScope, UserStatus
 
 
@@ -25,10 +25,9 @@ class UserModel(BaseSQLModelWithUUID, table=True):
     )
 
 
-class UserRoleModel(SQLModel, table=True):
+class UserRoleModel(BaseNonAuditableSQLModelWithID, table=True):
     __tablename__: ClassVar[str] = "user_role"
 
-    id: int | None = Field(default=None, primary_key=True)
     scope: RoleScope = Field(nullable=False)
     user_id: uuid.UUID = Field(nullable=False, foreign_key="user.id")
     tenant_id: int | None = Field(foreign_key="tenant.id")

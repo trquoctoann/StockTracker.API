@@ -10,7 +10,6 @@ from app.common.enum import RecordStatus
 class IndustryModel(BaseSQLModelWithID, table=True):
     __tablename__: ClassVar[str] = "industry"
 
-    id: int | None = Field(default=None, primary_key=True)
     code: str = Field(nullable=False, max_length=20)
     name: str = Field(nullable=False, max_length=255)
     level: int = Field(nullable=False, default=0)

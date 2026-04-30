@@ -1,16 +1,15 @@
 from typing import ClassVar
 
 from sqlalchemy import UniqueConstraint
-from sqlmodel import Field, Index, SQLModel
+from sqlmodel import Field, Index
 
-from app.common.base_model import BaseSQLModelWithID
+from app.common.base_model import BaseNonAuditableSQLModelWithID, BaseSQLModelWithID
 from app.common.enum import RecordStatus
 
 
 class MarketIndexModel(BaseSQLModelWithID, table=True):
     __tablename__: ClassVar[str] = "market_index"
 
-    id: int | None = Field(default=None, primary_key=True)
     symbol: str = Field(nullable=False, max_length=50)
     name: str = Field(nullable=False, max_length=255)
     description: str | None = Field(default=None, max_length=500)
@@ -23,10 +22,9 @@ class MarketIndexModel(BaseSQLModelWithID, table=True):
     )
 
 
-class IndexCompositionModel(SQLModel, table=True):
+class IndexCompositionModel(BaseNonAuditableSQLModelWithID, table=True):
     __tablename__: ClassVar[str] = "index_composition"
 
-    id: int | None = Field(default=None, primary_key=True)
     market_index_id: int = Field(nullable=False, foreign_key="market_index.id")
     stock_id: int = Field(nullable=False, foreign_key="stock.id")
 

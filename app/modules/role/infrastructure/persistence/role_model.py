@@ -1,15 +1,14 @@
 from typing import ClassVar
 
-from sqlmodel import Field, Index, SQLModel
+from sqlmodel import Field, Index
 
-from app.common.base_model import BaseSQLModelWithID
+from app.common.base_model import BaseNonAuditableSQLModelWithID, BaseSQLModelWithID
 from app.common.enum import RecordStatus, RoleScope, RoleType
 
 
 class RoleModel(BaseSQLModelWithID, table=True):
     __tablename__: ClassVar[str] = "role"
 
-    id: int | None = Field(default=None, primary_key=True)
     type: RoleType = Field(nullable=False)
     scope: RoleScope = Field(nullable=False)
     name: str = Field(nullable=False, max_length=255)
@@ -18,10 +17,9 @@ class RoleModel(BaseSQLModelWithID, table=True):
     version: int = Field(nullable=False)
 
 
-class RolePermissionModel(SQLModel, table=True):
+class RolePermissionModel(BaseNonAuditableSQLModelWithID, table=True):
     __tablename__: ClassVar[str] = "role_permission"
 
-    id: int | None = Field(default=None, primary_key=True)
     role_id: int = Field(nullable=False, foreign_key="role.id")
     permission_id: int = Field(nullable=False, foreign_key="permission.id")
 

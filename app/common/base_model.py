@@ -36,3 +36,7 @@ class BaseSQLModelWithUUID(AbstractAuditableSQLModel, table=False):
 
 class BaseSQLModelWithID(AbstractAuditableSQLModel, table=False):
     id: int | None = Field(default=None, primary_key=True)
+
+
+class BaseNonAuditableSQLModelWithID(SQLModel, table=False):
+    id: int | None = Field(default=None, primary_key=True)

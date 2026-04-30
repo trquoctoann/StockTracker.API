@@ -1,16 +1,15 @@
 from typing import ClassVar
 
 from sqlalchemy import UniqueConstraint
-from sqlmodel import Field, Index, SQLModel
+from sqlmodel import Field, Index
 
-from app.common.base_model import BaseSQLModelWithID
+from app.common.base_model import BaseNonAuditableSQLModelWithID, BaseSQLModelWithID
 from app.common.enum import RecordStatus, StockExchange, StockType
 
 
 class StockModel(BaseSQLModelWithID, table=True):
     __tablename__: ClassVar[str] = "stock"
 
-    id: int | None = Field(default=None, primary_key=True)
     symbol: str = Field(nullable=False, max_length=20)
     name: str = Field(nullable=False, max_length=500)
     short_name: str | None = Field(default=None, max_length=255)
@@ -25,10 +24,9 @@ class StockModel(BaseSQLModelWithID, table=True):
     )
 
 
-class StockIndustryModel(SQLModel, table=True):
+class StockIndustryModel(BaseNonAuditableSQLModelWithID, table=True):
     __tablename__: ClassVar[str] = "stock_industry"
 
-    id: int | None = Field(default=None, primary_key=True)
     stock_id: int = Field(nullable=False, foreign_key="stock.id")
     industry_id: int = Field(nullable=False, foreign_key="industry.id")
 
