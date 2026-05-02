@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.modules.account.api.account_router import router as account_router
 from app.modules.company_affiliation.api.company_affiliation_router import router as company_affiliation_router
 from app.modules.company_event.api.company_event_router import router as company_event_router
+from app.modules.company_news.api.company_news_router import router as company_news_router
 from app.modules.company_officer.api.company_officer_router import router as company_officer_router
 from app.modules.company_profile.api.company_profile_router import router as company_profile_router
 from app.modules.company_shareholder.api.company_shareholder_router import router as company_shareholder_router
@@ -27,3 +28,4 @@ api_v1_router.include_router(company_shareholder_router)
 api_v1_router.include_router(company_officer_router)
 api_v1_router.include_router(company_affiliation_router)
 api_v1_router.include_router(company_event_router)
+api_v1_router.include_router(company_news_router)

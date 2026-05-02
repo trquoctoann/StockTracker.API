@@ -27,6 +27,13 @@ from app.modules.company_event.company_event_query_dependency import (
     get_company_event_query_service,
     get_company_event_repository,
 )
+from app.modules.company_news.application.company_news_domain_service import CompanyNewsDomainService
+from app.modules.company_news.application.company_news_query_service import CompanyNewsQueryService
+from app.modules.company_news.company_news_dependency import get_company_news_domain_service
+from app.modules.company_news.company_news_query_dependency import (
+    get_company_news_query_service,
+    get_company_news_repository,
+)
 from app.modules.company_officer.application.company_officer_domain_service import CompanyOfficerDomainService
 from app.modules.company_officer.application.company_officer_query_service import CompanyOfficerQueryService
 from app.modules.company_officer.company_officer_dependency import get_company_officer_domain_service
@@ -305,6 +312,21 @@ def mock_company_event_domain_service():
     return AsyncMock(spec=CompanyEventDomainService)
 
 
+@pytest.fixture()
+def mock_company_news_repository():
+    return AsyncMock()
+
+
+@pytest.fixture()
+def mock_company_news_query_service():
+    return AsyncMock(spec=CompanyNewsQueryService)
+
+
+@pytest.fixture()
+def mock_company_news_domain_service():
+    return AsyncMock(spec=CompanyNewsDomainService)
+
+
 def _build_context_token(
     *,
     scope: RoleScope = RoleScope.ADMIN,
@@ -380,6 +402,9 @@ async def app_client(
     mock_company_event_repository,
     mock_company_event_query_service,
     mock_company_event_domain_service,
+    mock_company_news_repository,
+    mock_company_news_query_service,
+    mock_company_news_domain_service,
 ) -> AsyncIterator[AsyncClient]:
     from app.common.cache_version_keys import (
         get_role_version_cache_key,
@@ -435,6 +460,9 @@ async def app_client(
     app.dependency_overrides[get_company_event_repository] = lambda: mock_company_event_repository
     app.dependency_overrides[get_company_event_query_service] = lambda: mock_company_event_query_service
     app.dependency_overrides[get_company_event_domain_service] = lambda: mock_company_event_domain_service
+    app.dependency_overrides[get_company_news_repository] = lambda: mock_company_news_repository
+    app.dependency_overrides[get_company_news_query_service] = lambda: mock_company_news_query_service
+    app.dependency_overrides[get_company_news_domain_service] = lambda: mock_company_news_domain_service
 
     transport = ASGITransport(app=app)  # type: ignore[arg-type]
     async with AsyncClient(transport=transport, base_url="http://test") as client:

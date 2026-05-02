@@ -76,6 +76,9 @@
       },
       "company_event": {
         "not_found": "Company event with id: {id} was not found."
+      },
+      "company_news": {
+        "not_found": "Company news with id: {id} was not found."
       }
     },
     "rate_limit": {

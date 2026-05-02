@@ -2,6 +2,7 @@ from app.modules.company_affiliation.infrastructure.persistence.company_affiliat
     CompanyAffiliationModel,
 )
 from app.modules.company_event.infrastructure.persistence.company_event_model import CompanyEventModel
+from app.modules.company_news.infrastructure.persistence.company_news_model import CompanyNewsModel
 from app.modules.company_officer.infrastructure.persistence.company_officer_model import CompanyOfficerModel
 from app.modules.company_profile.infrastructure.persistence.company_profile_model import CompanyProfileModel
 from app.modules.company_shareholder.infrastructure.persistence.company_shareholder_model import (
@@ -21,6 +22,7 @@ from app.modules.user.infrastructure.persistence.user_model import UserModel, Us
 __all__ = [
     "CompanyAffiliationModel",
     "CompanyEventModel",
+    "CompanyNewsModel",
     "CompanyOfficerModel",
     "CompanyProfileModel",
     "CompanyShareholderModel",

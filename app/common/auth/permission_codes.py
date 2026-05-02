@@ -49,6 +49,9 @@ class PermissionCode(StrEnum):
     COMPANY_EVENT_READ = "COMPANY_EVENT_READ"
     COMPANY_EVENT_UPDATE = "COMPANY_EVENT_UPDATE"
 
+    COMPANY_NEWS_READ = "COMPANY_NEWS_READ"
+    COMPANY_NEWS_UPDATE = "COMPANY_NEWS_UPDATE"
+
 
 class PermissionBitmap:
     def __init__(self) -> None:

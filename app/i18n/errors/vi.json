@@ -76,6 +76,9 @@
       },
       "company_event": {
         "not_found": "Không tìm thấy sự kiện có id: {id}."
+      },
+      "company_news": {
+        "not_found": "Không tìm thấy tin tức có id: {id}."
       }
     },
     "rate_limit": {
