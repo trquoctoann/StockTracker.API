@@ -1,3 +1,4 @@
+from app.modules.company_officer.infrastructure.persistence.company_officer_model import CompanyOfficerModel
 from app.modules.company_profile.infrastructure.persistence.company_profile_model import CompanyProfileModel
 from app.modules.company_shareholder.infrastructure.persistence.company_shareholder_model import (
     CompanyShareholderModel,
@@ -14,6 +15,7 @@ from app.modules.tenant.infrastructure.persistence.tenant_model import TenantMod
 from app.modules.user.infrastructure.persistence.user_model import UserModel, UserRoleModel
 
 __all__ = [
+    "CompanyOfficerModel",
     "CompanyProfileModel",
     "CompanyShareholderModel",
     "IndexCompositionModel",

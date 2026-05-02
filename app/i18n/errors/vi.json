@@ -67,6 +67,9 @@
       },
       "company_shareholder": {
         "not_found": "Không tìm thấy cổ đông có id: {id}."
+      },
+      "company_officer": {
+        "not_found": "Không tìm thấy ban lãnh đạo có id: {id}."
       }
     },
     "rate_limit": {
