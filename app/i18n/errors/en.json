@@ -73,6 +73,9 @@
       },
       "company_affiliation": {
         "not_found": "Company affiliation with id: {id} was not found."
+      },
+      "company_event": {
+        "not_found": "Company event with id: {id} was not found."
       }
     },
     "rate_limit": {

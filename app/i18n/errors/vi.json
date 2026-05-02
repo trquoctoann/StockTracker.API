@@ -73,6 +73,9 @@
       },
       "company_affiliation": {
         "not_found": "Không tìm thấy công ty liên kết có id: {id}."
+      },
+      "company_event": {
+        "not_found": "Không tìm thấy sự kiện có id: {id}."
       }
     },
     "rate_limit": {

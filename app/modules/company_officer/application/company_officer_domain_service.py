@@ -39,7 +39,6 @@ class CompanyOfficerDomainService:
         async with TransactionManager(self._session):
             _LOG.debug("COMPANY_OFFICER_SYNCING", stock_id=stock_id, count=len(commands))
 
-            # Ensure stock exists
             await self._stock_query_service.get_by_id(stock_id)
 
             existing_entities = await self._query_service.find_all(
@@ -51,11 +50,10 @@ class CompanyOfficerDomainService:
 
             to_create: list[CompanyOfficerEntity] = []
             to_update: list[CompanyOfficerEntity] = []
-
             for command in commands:
                 command.stock_id = stock_id
-                key = (stock_id, command.data_source_id) if command.data_source_id else None
 
+                key = (stock_id, command.data_source_id) if command.data_source_id else None
                 if key and key in existing_map:
                     existing_entity = existing_map.pop(key)
                     update_data = command.model_dump(exclude_unset=True)
@@ -67,7 +65,6 @@ class CompanyOfficerDomainService:
                     to_create.append(entity)
 
             to_delete_ids = [e.id for e in existing_map.values() if e.id is not None]
-
             if to_delete_ids:
                 await self._company_officer_repository.bulk_delete(
                     filter_param=CompanyOfficerFilterParameter(
