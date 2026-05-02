@@ -11,6 +11,15 @@ from app.common.cache import get_cache_service
 from app.common.enum import RoleScope
 from app.core.database import get_session
 from app.main import create_app
+from app.modules.company_affiliation.application.company_affiliation_domain_service import (
+    CompanyAffiliationDomainService,
+)
+from app.modules.company_affiliation.application.company_affiliation_query_service import CompanyAffiliationQueryService
+from app.modules.company_affiliation.company_affiliation_dependency import get_company_affiliation_domain_service
+from app.modules.company_affiliation.company_affiliation_query_dependency import (
+    get_company_affiliation_query_service,
+    get_company_affiliation_repository,
+)
 from app.modules.company_officer.application.company_officer_domain_service import CompanyOfficerDomainService
 from app.modules.company_officer.application.company_officer_query_service import CompanyOfficerQueryService
 from app.modules.company_officer.company_officer_dependency import get_company_officer_domain_service
@@ -259,6 +268,21 @@ def mock_company_officer_domain_service():
     return AsyncMock(spec=CompanyOfficerDomainService)
 
 
+@pytest.fixture()
+def mock_company_affiliation_repository():
+    return AsyncMock()
+
+
+@pytest.fixture()
+def mock_company_affiliation_query_service():
+    return AsyncMock(spec=CompanyAffiliationQueryService)
+
+
+@pytest.fixture()
+def mock_company_affiliation_domain_service():
+    return AsyncMock(spec=CompanyAffiliationDomainService)
+
+
 def _build_context_token(
     *,
     scope: RoleScope = RoleScope.ADMIN,
@@ -328,6 +352,9 @@ async def app_client(
     mock_company_officer_repository,
     mock_company_officer_query_service,
     mock_company_officer_domain_service,
+    mock_company_affiliation_repository,
+    mock_company_affiliation_query_service,
+    mock_company_affiliation_domain_service,
 ) -> AsyncIterator[AsyncClient]:
     from app.common.cache_version_keys import (
         get_role_version_cache_key,
@@ -377,6 +404,9 @@ async def app_client(
     app.dependency_overrides[get_company_officer_repository] = lambda: mock_company_officer_repository
     app.dependency_overrides[get_company_officer_query_service] = lambda: mock_company_officer_query_service
     app.dependency_overrides[get_company_officer_domain_service] = lambda: mock_company_officer_domain_service
+    app.dependency_overrides[get_company_affiliation_repository] = lambda: mock_company_affiliation_repository
+    app.dependency_overrides[get_company_affiliation_query_service] = lambda: mock_company_affiliation_query_service
+    app.dependency_overrides[get_company_affiliation_domain_service] = lambda: mock_company_affiliation_domain_service
 
     transport = ASGITransport(app=app)  # type: ignore[arg-type]
     async with AsyncClient(transport=transport, base_url="http://test") as client:

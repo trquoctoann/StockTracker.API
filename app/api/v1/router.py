@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.modules.account.api.account_router import router as account_router
+from app.modules.company_affiliation.api.company_affiliation_router import router as company_affiliation_router
 from app.modules.company_officer.api.company_officer_router import router as company_officer_router
 from app.modules.company_profile.api.company_profile_router import router as company_profile_router
 from app.modules.company_shareholder.api.company_shareholder_router import router as company_shareholder_router
@@ -23,3 +24,4 @@ api_v1_router.include_router(market_index_router)
 api_v1_router.include_router(company_profile_router)
 api_v1_router.include_router(company_shareholder_router)
 api_v1_router.include_router(company_officer_router)
+api_v1_router.include_router(company_affiliation_router)

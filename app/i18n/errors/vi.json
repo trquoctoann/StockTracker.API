@@ -70,6 +70,9 @@
       },
       "company_officer": {
         "not_found": "Không tìm thấy ban lãnh đạo có id: {id}."
+      },
+      "company_affiliation": {
+        "not_found": "Không tìm thấy công ty liên kết có id: {id}."
       }
     },
     "rate_limit": {

@@ -70,6 +70,9 @@
       },
       "company_officer": {
         "not_found": "Company officer with id: {id} was not found."
+      },
+      "company_affiliation": {
+        "not_found": "Company affiliation with id: {id} was not found."
       }
     },
     "rate_limit": {
