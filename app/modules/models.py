@@ -1,4 +1,7 @@
 from app.modules.company_profile.infrastructure.persistence.company_profile_model import CompanyProfileModel
+from app.modules.company_shareholder.infrastructure.persistence.company_shareholder_model import (
+    CompanyShareholderModel,
+)
 from app.modules.industry.infrastructure.persistence.industry_model import IndustryModel
 from app.modules.market_index.infrastructure.persistence.market_index_model import (
     IndexCompositionModel,
@@ -12,6 +15,7 @@ from app.modules.user.infrastructure.persistence.user_model import UserModel, Us
 
 __all__ = [
     "CompanyProfileModel",
+    "CompanyShareholderModel",
     "IndexCompositionModel",
     "IndustryModel",
     "MarketIndexModel",

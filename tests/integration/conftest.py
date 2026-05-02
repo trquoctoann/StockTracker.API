@@ -18,6 +18,15 @@ from app.modules.company_profile.company_profile_query_dependency import (
     get_company_profile_query_service,
     get_company_profile_repository,
 )
+from app.modules.company_shareholder.application.company_shareholder_domain_service import (
+    CompanyShareholderDomainService,
+)
+from app.modules.company_shareholder.application.company_shareholder_query_service import CompanyShareholderQueryService
+from app.modules.company_shareholder.company_shareholder_dependency import get_company_shareholder_domain_service
+from app.modules.company_shareholder.company_shareholder_query_dependency import (
+    get_company_shareholder_query_service,
+    get_company_shareholder_repository,
+)
 from app.modules.industry.application.industry_domain_service import IndustryDomainService
 from app.modules.industry.application.industry_query_service import IndustryQueryService
 from app.modules.industry.industry_dependency import get_industry_domain_service
@@ -213,6 +222,21 @@ def mock_company_profile_domain_service():
     return AsyncMock(spec=CompanyProfileDomainService)
 
 
+@pytest.fixture()
+def mock_company_shareholder_repository():
+    return AsyncMock()
+
+
+@pytest.fixture()
+def mock_company_shareholder_query_service():
+    return AsyncMock(spec=CompanyShareholderQueryService)
+
+
+@pytest.fixture()
+def mock_company_shareholder_domain_service():
+    return AsyncMock(spec=CompanyShareholderDomainService)
+
+
 def _build_context_token(
     *,
     scope: RoleScope = RoleScope.ADMIN,
@@ -276,6 +300,9 @@ async def app_client(
     mock_company_profile_repository,
     mock_company_profile_query_service,
     mock_company_profile_domain_service,
+    mock_company_shareholder_repository,
+    mock_company_shareholder_query_service,
+    mock_company_shareholder_domain_service,
 ) -> AsyncIterator[AsyncClient]:
     from app.common.cache_version_keys import (
         get_role_version_cache_key,
@@ -319,6 +346,9 @@ async def app_client(
     app.dependency_overrides[get_company_profile_repository] = lambda: mock_company_profile_repository
     app.dependency_overrides[get_company_profile_query_service] = lambda: mock_company_profile_query_service
     app.dependency_overrides[get_company_profile_domain_service] = lambda: mock_company_profile_domain_service
+    app.dependency_overrides[get_company_shareholder_repository] = lambda: mock_company_shareholder_repository
+    app.dependency_overrides[get_company_shareholder_query_service] = lambda: mock_company_shareholder_query_service
+    app.dependency_overrides[get_company_shareholder_domain_service] = lambda: mock_company_shareholder_domain_service
 
     transport = ASGITransport(app=app)  # type: ignore[arg-type]
     async with AsyncClient(transport=transport, base_url="http://test") as client:

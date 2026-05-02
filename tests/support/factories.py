@@ -6,6 +6,7 @@ from datetime import datetime
 from app.common.auth.principals import ContextPrincipal, IdentityPrincipal
 from app.common.enum import RecordStatus, RoleScope, RoleType, StockExchange, StockType, UserStatus
 from app.modules.company_profile.domain.company_profile_entity import CompanyProfileEntity
+from app.modules.company_shareholder.domain.company_shareholder_entity import CompanyShareholderEntity
 from app.modules.industry.domain.industry_entity import IndustryEntity
 from app.modules.market_index.domain.market_index_entity import MarketIndexEntity
 from app.modules.permission.domain.permission_entity import PermissionEntity
@@ -242,4 +243,19 @@ def make_company_profile(
         id=id,
         symbol=symbol,
         stock_id=stock_id,
+    )
+
+
+def make_company_shareholder(
+    *,
+    id: int = 1,
+    name: str = "Shareholder A",
+    data_source_id: str | None = None,
+    stock_id: int = 1,
+) -> CompanyShareholderEntity:
+    return CompanyShareholderEntity(
+        id=id,
+        name=name,
+        stock_id=stock_id,
+        data_source_id=data_source_id,
     )

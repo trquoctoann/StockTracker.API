@@ -64,6 +64,9 @@
       },
       "company_profile": {
         "not_found": "Company profile for stock id: {id} was not found."
+      },
+      "company_shareholder": {
+        "not_found": "Company shareholder with id: {id} was not found."
       }
     },
     "rate_limit": {

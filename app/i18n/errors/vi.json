@@ -64,6 +64,9 @@
       },
       "company_profile": {
         "not_found": "Không tìm thấy hồ sơ công ty cho cổ phiếu có id: {id}."
+      },
+      "company_shareholder": {
+        "not_found": "Không tìm thấy cổ đông có id: {id}."
       }
     },
     "rate_limit": {
