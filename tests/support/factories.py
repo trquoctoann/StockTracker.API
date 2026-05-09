@@ -5,6 +5,7 @@ from datetime import datetime
 
 from app.common.auth.principals import ContextPrincipal, IdentityPrincipal
 from app.common.enum import (
+    MatchType,
     PriceInterval,
     RecordStatus,
     RoleScope,
@@ -24,6 +25,7 @@ from app.modules.market_index.domain.market_index_entity import MarketIndexEntit
 from app.modules.permission.domain.permission_entity import PermissionEntity
 from app.modules.role.domain.role_entity import RoleEntity
 from app.modules.stock.domain.stock_entity import StockEntity
+from app.modules.stock_intraday.domain.stock_intraday_entity import StockIntradayEntity
 from app.modules.stock_price_history.domain.stock_price_history_entity import StockPriceHistoryEntity
 from app.modules.tenant.domain.tenant_entity import TenantEntity
 from app.modules.user.domain.user_entity import UserEntity, UserRoleEntity
@@ -355,5 +357,26 @@ def make_stock_price_history(
         low=low,
         close=close,
         volume=volume,
+        stock_id=stock_id,
+    )
+
+
+def make_stock_intraday(
+    *,
+    id: int = 1,
+    time: datetime | None = None,
+    price: float = 100.0,
+    volume: float = 500.0,
+    match_type: MatchType = MatchType.BUY,
+    data_source_id: str | None = None,
+    stock_id: int = 1,
+) -> StockIntradayEntity:
+    return StockIntradayEntity(
+        id=id,
+        time=time or _NOW,
+        price=price,
+        volume=volume,
+        match_type=match_type,
+        data_source_id=data_source_id,
         stock_id=stock_id,
     )

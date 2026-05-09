@@ -82,6 +82,9 @@
       },
       "stock_price_history": {
         "not_found": "Không tìm thấy lịch sử giá có id: {id}."
+      },
+      "stock_intraday": {
+        "not_found": "Không tìm thấy dữ liệu khớp lệnh có id: {id}."
       }
     },
     "rate_limit": {

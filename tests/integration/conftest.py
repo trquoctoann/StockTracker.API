@@ -88,6 +88,13 @@ from app.modules.stock.stock_query_dependency import (
     get_stock_query_service,
     get_stock_repository,
 )
+from app.modules.stock_intraday.application.stock_intraday_domain_service import StockIntradayDomainService
+from app.modules.stock_intraday.application.stock_intraday_query_service import StockIntradayQueryService
+from app.modules.stock_intraday.stock_intraday_dependency import get_stock_intraday_domain_service
+from app.modules.stock_intraday.stock_intraday_query_dependency import (
+    get_stock_intraday_query_service,
+    get_stock_intraday_repository,
+)
 from app.modules.stock_price_history.application.stock_price_history_domain_service import (
     StockPriceHistoryDomainService,
 )
@@ -353,6 +360,21 @@ def mock_stock_price_history_domain_service():
     return AsyncMock(spec=StockPriceHistoryDomainService)
 
 
+@pytest.fixture()
+def mock_stock_intraday_repository():
+    return AsyncMock()
+
+
+@pytest.fixture()
+def mock_stock_intraday_query_service():
+    return AsyncMock(spec=StockIntradayQueryService)
+
+
+@pytest.fixture()
+def mock_stock_intraday_domain_service():
+    return AsyncMock(spec=StockIntradayDomainService)
+
+
 def _build_context_token(
     *,
     scope: RoleScope = RoleScope.ADMIN,
@@ -434,6 +456,9 @@ async def app_client(
     mock_stock_price_history_repository,
     mock_stock_price_history_query_service,
     mock_stock_price_history_domain_service,
+    mock_stock_intraday_repository,
+    mock_stock_intraday_query_service,
+    mock_stock_intraday_domain_service,
 ) -> AsyncIterator[AsyncClient]:
     from app.common.cache_version_keys import (
         get_role_version_cache_key,
@@ -495,6 +520,9 @@ async def app_client(
     app.dependency_overrides[get_stock_price_history_repository] = lambda: mock_stock_price_history_repository
     app.dependency_overrides[get_stock_price_history_query_service] = lambda: mock_stock_price_history_query_service
     app.dependency_overrides[get_stock_price_history_domain_service] = lambda: mock_stock_price_history_domain_service
+    app.dependency_overrides[get_stock_intraday_repository] = lambda: mock_stock_intraday_repository
+    app.dependency_overrides[get_stock_intraday_query_service] = lambda: mock_stock_intraday_query_service
+    app.dependency_overrides[get_stock_intraday_domain_service] = lambda: mock_stock_intraday_domain_service
 
     transport = ASGITransport(app=app)  # type: ignore[arg-type]
     async with AsyncClient(transport=transport, base_url="http://test") as client:

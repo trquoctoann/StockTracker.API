@@ -49,3 +49,8 @@ class PriceInterval(Enum):
     ONE_DAY = "1D"
     ONE_WEEK = "1W"
     ONE_MONTH = "1M"
+
+
+class MatchType(Enum):
+    BUY = "BUY"
+    SELL = "SELL"
