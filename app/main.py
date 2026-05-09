@@ -33,6 +33,14 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         environment=settings.ENVIRONMENT,
     )
 
+    if settings.RABBITMQ_ENABLED:
+        from app.common.consumer_registry import register_consumer
+        from app.modules.stock_price_history.consumer.stock_price_history_consumer import (
+            StockPriceHistoryConsumer,
+        )
+
+        register_consumer(StockPriceHistoryConsumer())
+
     await connect_rabbitmq()
     consumer_tasks = await start_all_consumers()
 

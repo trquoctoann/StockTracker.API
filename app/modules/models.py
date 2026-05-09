@@ -16,6 +16,9 @@ from app.modules.market_index.infrastructure.persistence.market_index_model impo
 from app.modules.permission.infrastructure.persistence.permission_model import PermissionModel
 from app.modules.role.infrastructure.persistence.role_model import RoleModel, RolePermissionModel
 from app.modules.stock.infrastructure.persistence.stock_model import StockIndustryModel, StockModel
+from app.modules.stock_price_history.infrastructure.persistence.stock_price_history_model import (
+    StockPriceHistoryModel,
+)
 from app.modules.tenant.infrastructure.persistence.tenant_model import TenantModel
 from app.modules.user.infrastructure.persistence.user_model import UserModel, UserRoleModel
 
@@ -34,6 +37,7 @@ __all__ = [
     "RolePermissionModel",
     "StockIndustryModel",
     "StockModel",
+    "StockPriceHistoryModel",
     "TenantModel",
     "UserModel",
     "UserRoleModel",

@@ -88,6 +88,17 @@ from app.modules.stock.stock_query_dependency import (
     get_stock_query_service,
     get_stock_repository,
 )
+from app.modules.stock_price_history.application.stock_price_history_domain_service import (
+    StockPriceHistoryDomainService,
+)
+from app.modules.stock_price_history.application.stock_price_history_query_service import (
+    StockPriceHistoryQueryService,
+)
+from app.modules.stock_price_history.stock_price_history_dependency import get_stock_price_history_domain_service
+from app.modules.stock_price_history.stock_price_history_query_dependency import (
+    get_stock_price_history_query_service,
+    get_stock_price_history_repository,
+)
 from app.modules.tenant.application.tenant_domain_service import TenantDomainService
 from app.modules.tenant.application.tenant_query_service import TenantQueryService
 from app.modules.tenant.tenant_dependency import get_tenant_domain_service
@@ -327,6 +338,21 @@ def mock_company_news_domain_service():
     return AsyncMock(spec=CompanyNewsDomainService)
 
 
+@pytest.fixture()
+def mock_stock_price_history_repository():
+    return AsyncMock()
+
+
+@pytest.fixture()
+def mock_stock_price_history_query_service():
+    return AsyncMock(spec=StockPriceHistoryQueryService)
+
+
+@pytest.fixture()
+def mock_stock_price_history_domain_service():
+    return AsyncMock(spec=StockPriceHistoryDomainService)
+
+
 def _build_context_token(
     *,
     scope: RoleScope = RoleScope.ADMIN,
@@ -405,6 +431,9 @@ async def app_client(
     mock_company_news_repository,
     mock_company_news_query_service,
     mock_company_news_domain_service,
+    mock_stock_price_history_repository,
+    mock_stock_price_history_query_service,
+    mock_stock_price_history_domain_service,
 ) -> AsyncIterator[AsyncClient]:
     from app.common.cache_version_keys import (
         get_role_version_cache_key,
@@ -463,6 +492,9 @@ async def app_client(
     app.dependency_overrides[get_company_news_repository] = lambda: mock_company_news_repository
     app.dependency_overrides[get_company_news_query_service] = lambda: mock_company_news_query_service
     app.dependency_overrides[get_company_news_domain_service] = lambda: mock_company_news_domain_service
+    app.dependency_overrides[get_stock_price_history_repository] = lambda: mock_stock_price_history_repository
+    app.dependency_overrides[get_stock_price_history_query_service] = lambda: mock_stock_price_history_query_service
+    app.dependency_overrides[get_stock_price_history_domain_service] = lambda: mock_stock_price_history_domain_service
 
     transport = ASGITransport(app=app)  # type: ignore[arg-type]
     async with AsyncClient(transport=transport, base_url="http://test") as client:

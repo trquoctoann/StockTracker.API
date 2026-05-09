@@ -4,7 +4,15 @@ import uuid
 from datetime import datetime
 
 from app.common.auth.principals import ContextPrincipal, IdentityPrincipal
-from app.common.enum import RecordStatus, RoleScope, RoleType, StockExchange, StockType, UserStatus
+from app.common.enum import (
+    PriceInterval,
+    RecordStatus,
+    RoleScope,
+    RoleType,
+    StockExchange,
+    StockType,
+    UserStatus,
+)
 from app.modules.company_affiliation.domain.company_affiliation_entity import CompanyAffiliationEntity
 from app.modules.company_event.domain.company_event_entity import CompanyEventEntity
 from app.modules.company_news.domain.company_news_entity import CompanyNewsEntity
@@ -16,6 +24,7 @@ from app.modules.market_index.domain.market_index_entity import MarketIndexEntit
 from app.modules.permission.domain.permission_entity import PermissionEntity
 from app.modules.role.domain.role_entity import RoleEntity
 from app.modules.stock.domain.stock_entity import StockEntity
+from app.modules.stock_price_history.domain.stock_price_history_entity import StockPriceHistoryEntity
 from app.modules.tenant.domain.tenant_entity import TenantEntity
 from app.modules.user.domain.user_entity import UserEntity, UserRoleEntity
 
@@ -321,5 +330,30 @@ def make_company_news(
         id=id,
         title=title,
         data_source_id=data_source_id,
+        stock_id=stock_id,
+    )
+
+
+def make_stock_price_history(
+    *,
+    id: int = 1,
+    time: datetime | None = None,
+    interval: PriceInterval = PriceInterval.ONE_DAY,
+    open: float = 100.0,
+    high: float = 105.0,
+    low: float = 99.0,
+    close: float = 103.0,
+    volume: float = 1000000.0,
+    stock_id: int = 1,
+) -> StockPriceHistoryEntity:
+    return StockPriceHistoryEntity(
+        id=id,
+        time=time or _NOW,
+        interval=interval,
+        open=open,
+        high=high,
+        low=low,
+        close=close,
+        volume=volume,
         stock_id=stock_id,
     )

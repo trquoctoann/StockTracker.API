@@ -79,6 +79,9 @@
       },
       "company_news": {
         "not_found": "Company news with id: {id} was not found."
+      },
+      "stock_price_history": {
+        "not_found": "Stock price history with id: {id} was not found."
       }
     },
     "rate_limit": {

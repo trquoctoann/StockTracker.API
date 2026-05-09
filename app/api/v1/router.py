@@ -11,6 +11,7 @@ from app.modules.industry.api.industry_router import router as industry_router
 from app.modules.market_index.api.market_index_router import router as market_index_router
 from app.modules.role.api.role_router import router as role_router
 from app.modules.stock.api.stock_router import router as stock_router
+from app.modules.stock_price_history.api.stock_price_history_router import router as stock_price_history_router
 from app.modules.tenant.api.tenant_router import router as tenant_router
 from app.modules.user.api.user_router import router as user_router
 
@@ -29,3 +30,4 @@ api_v1_router.include_router(company_officer_router)
 api_v1_router.include_router(company_affiliation_router)
 api_v1_router.include_router(company_event_router)
 api_v1_router.include_router(company_news_router)
+api_v1_router.include_router(stock_price_history_router)

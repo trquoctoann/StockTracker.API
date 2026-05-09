@@ -18,3 +18,9 @@ def get_user_role_version_cache_key(user_id: uuid.UUID, scope: str, tenant_id: i
 
 def get_role_version_cache_key(role_id: int) -> str:
     return f"role:{role_id}:version"
+
+
+def get_price_history_bars_cache_key(stock_id: int, interval: str, limit: int | None = None) -> str:
+    if limit is not None:
+        return f"stock_price_history:{stock_id}:{interval}:bars:{limit}"
+    return f"stock_price_history:{stock_id}:{interval}:bars"

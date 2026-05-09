@@ -4,6 +4,7 @@ from typing import TypeVar
 
 from pydantic import BaseModel
 from sqlalchemy import delete
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlmodel import SQLModel, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel.sql.expression import SelectOfScalar
@@ -169,3 +170,28 @@ class SQLExecutor[M: SQLModel]:
 
         statement = delete(self.model).where(getattr(self.model, id_attr).in_(subquery))
         await self.session.exec(statement)
+
+    async def bulk_upsert(
+        self,
+        models: Sequence[M],
+        *,
+        constraint_name: str,
+        update_columns: list[str],
+        id_attr: str = "id",
+    ) -> None:
+        if not models:
+            return
+
+        table = self.model.__table__  # type: ignore[attr-defined]
+        column_names = [c.name for c in table.columns if c.name != id_attr]
+
+        values = [{col: getattr(m, col) for col in column_names if hasattr(m, col)} for m in models]
+
+        stmt = pg_insert(self.model).values(values)
+        stmt = stmt.on_conflict_do_update(
+            constraint=constraint_name,
+            set_={col: stmt.excluded[col] for col in update_columns},
+        )
+
+        await self.session.exec(stmt)
+        await self.session.flush()

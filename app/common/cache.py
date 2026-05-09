@@ -5,7 +5,7 @@ import time
 from typing import Annotated
 
 from fastapi import Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, TypeAdapter
 from redis.asyncio import Redis
 from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import TimeoutError as RedisTimeoutError
@@ -70,6 +70,20 @@ class CacheService[T: BaseModel]:
             await self.delete(key)
             return None
 
+    async def get_many_model(
+        self, key: str, model_type: type[T], *, is_service_level_cache: bool = False
+    ) -> list[T] | None:
+        raw = await self.get(key, is_service_level_cache=is_service_level_cache)
+        if raw is None:
+            return None
+        try:
+            adapter = TypeAdapter(list[model_type])
+            return adapter.validate_json(raw)
+        except Exception:
+            _LOG.warning("CACHE_DESERIALIZE_MANY_FAILED", cache_key=key, exc_info=True)
+            await self.delete(key)
+            return None
+
     async def get_int(self, key: str, *, is_service_level_cache: bool = False) -> int | None:
         raw = await self.get(key, is_service_level_cache=is_service_level_cache)
         if raw is None:
@@ -107,6 +121,18 @@ class CacheService[T: BaseModel]:
         self, key: str, value: BaseModel, *, ttl: int | None = None, is_service_level_cache: bool = False
     ) -> None:
         await self.set(key, value.model_dump_json(), ttl=ttl, is_service_level_cache=is_service_level_cache)
+
+    async def set_many_model(
+        self,
+        key: str,
+        values: list[T],
+        model_type: type[T],
+        *,
+        ttl: int | None = None,
+        is_service_level_cache: bool = False,
+    ) -> None:
+        adapter = TypeAdapter(list[model_type])
+        await self.set(key, adapter.dump_json(values).decode(), ttl=ttl, is_service_level_cache=is_service_level_cache)
 
     async def set_int(
         self, key: str, value: int, *, ttl: int | None = None, is_service_level_cache: bool = False

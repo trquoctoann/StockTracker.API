@@ -79,6 +79,9 @@
       },
       "company_news": {
         "not_found": "Không tìm thấy tin tức có id: {id}."
+      },
+      "stock_price_history": {
+        "not_found": "Không tìm thấy lịch sử giá có id: {id}."
       }
     },
     "rate_limit": {
